@@ -19,9 +19,10 @@ data/
 !Contrato de Prestação de Serviços - IA Infinito.pdf
 
 # Binários compilados e diretórios temporários
-server
-contrato-generator
-ia-infinito-contracts
+# Apenas o binário na raiz e nunca o código-fonte em cmd/server/
+/server
+/contrato-generator
+/ia-infinito-contracts
 *.exe
 tmp/
 dist/
