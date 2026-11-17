@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ia-infinito-contratos-v1';
+const CACHE_NAME = 'ia-infinito-contratos-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.webmanifest',
@@ -24,14 +24,14 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET') return;
-
   const url = new URL(req.url);
-  if (url.pathname.startsWith('/api/') || url.pathname === '/docs' || url.pathname === '/openapi.yaml') {
+
+  // Nunca interceptar chamadas /api/ ou métodos diferentes de GET
+  if (req.method !== 'GET' || url.pathname.startsWith('/api/') || url.pathname === '/docs' || url.pathname === '/openapi.yaml') {
     return;
   }
 
-  // Network-first for HTML shell, cache-first for static icons/manifest
+  // Network-first para o shell HTML, cache-first para ícones e manifest
   if (url.pathname === '/') {
     event.respondWith(
       fetch(req)

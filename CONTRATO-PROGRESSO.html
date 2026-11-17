@@ -231,6 +231,10 @@
       <article class="list-panel surface">
         <ul class="plain-list">
           <li>
+            <span class="decision-title">17/11/2026 · v1.7.1 — Correção de PDF no Mobile/PWA (BUG-005) e Bypass SW</span>
+            <span class="decision-copy">Corrigido <code>BUG-005</code>: <code>GET /api/contracts/{id}/pdf</code> com geração sob demanda e headers mobile-safe (<code>attachment</code>, nome ASCII sanitizado, <code>Cache-Control: no-store</code>), Service Worker <code>v2</code> com bypass imediato em <code>/api/</code> e fluxo <code>exportarPDF</code> resiliente a expiração de <em>user gesture</em> no <code>navigator.share</code>, download nativo em PWA <code>standalone</code> e banner com botões diretos <strong>Baixar PDF Novamente</strong> e <strong>Abrir WhatsApp</strong>. Validado com <code>go vet</code>, <code>go test</code> e <code>go build</code>.</span>
+          </li>
+          <li>
             <span class="decision-title">17/11/2026 · Correção do download de PDF com MinIO interno</span>
             <span class="decision-copy">O endpoint <code>GET /api/v1/contracts/{id}/pdf</code> redirecionava para uma URL pré-assinada com host <code>http://minio:9000</code>, inacessível pelo navegador. O <code>app</code> passou a ler o objeto do S3 e servir o PDF diretamente (<code>Content-Type: application/pdf</code>, <code>Content-Disposition</code> com o código do contrato), mantendo o MinIO privado. Deploy <code>giflpf7ybabp9qxhtflccyza</code> (<code>857195e</code>) validado: download <code>200</code> com 213.353 bytes e assinatura <code>%PDF</code>.</span>
           </li>

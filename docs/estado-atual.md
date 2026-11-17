@@ -1,7 +1,7 @@
 # Estado atual — Gerador de Contratos IA Infinito
 
 **Última atualização:** 17/11/2026  
-**Status:** **v1.7 em produção com CI/CD automatizado e MinIO S3 ativo no Coolify.** `docker-compose.coolify.yml` com serviços `minio` (`pgsty/silo`, `256m`, `gerador_contrato_minio_data:/data`), `minio-init` (`pgsty/mc`, cria o bucket `contratos`) e `app` conectado internamente via `http://minio:9000` com `S3_USE_PATH_STYLE=true`. Variáveis `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` aplicadas no Coolify; `.env.example` documenta todas as variáveis e o `.env` local segue ignorado pelo Git.
+**Status:** **v1.7.1 (Correção PWA/Mobile PDF `BUG-005` + MinIO + CI/CD Coolify) Pronta para Deploy.** Corrigido `BUG-005` para exportação/download/compartilhamento de PDF em navegadores móveis e PWA `standalone`: `GET /api/contracts/{id}/pdf` com geração sob demanda e headers `attachment` + `no-store`, `sw.js` (`v2`) com bypass em `/api/` e fluxo resiliente no frontend com fallback anti-bloqueio de pop-up.
 
 ## Deploy em produção (verificado)
 

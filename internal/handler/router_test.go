@@ -145,17 +145,33 @@ func TestHTTP_EndpointsAndPDFGeneration(t *testing.T) {
 		t.Fatalf("GET /api/contracts failed: code=%d body=%s", rec.Code, rec.Body.String())
 	}
 
-	// 6. POST /api/contracts/{id}/pdf
+	// 6. GET /api/contracts/{id}/pdf directly (on-demand generation + mobile-safe headers)
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/contracts/"+created.ID+"/pdf", nil))
+	if rec.Code != http.StatusOK || !bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
+		t.Fatalf("GET /api/contracts/{id}/pdf (on-demand) failed: code=%d len=%d", rec.Code, rec.Body.Len())
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "application/pdf" {
+		t.Errorf("expected Content-Type application/pdf, got %q", ct)
+	}
+	if cd := rec.Header().Get("Content-Disposition"); !strings.Contains(cd, "attachment; filename=\"Contrato_IA_Infinito_") {
+		t.Errorf("expected sanitized attachment Content-Disposition, got %q", cd)
+	}
+	if cc := rec.Header().Get("Cache-Control"); cc != "no-store" {
+		t.Errorf("expected Cache-Control no-store, got %q", cc)
+	}
+
+	// 7. POST /api/contracts/{id}/pdf (explicit regeneration)
 	rec = httptest.NewRecorder()
 	r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/contracts/"+created.ID+"/pdf", nil))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("POST /api/contracts/{id}/pdf failed: code=%d body=%s", rec.Code, rec.Body.String())
 	}
 
-	// 7. GET /api/contracts/{id}/pdf
+	// 8. Verify sw.js contains /api/ bypass
 	rec = httptest.NewRecorder()
-	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/contracts/"+created.ID+"/pdf", nil))
-	if rec.Code != http.StatusOK || !bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
-		t.Fatalf("GET /api/contracts/{id}/pdf failed: code=%d len=%d", rec.Code, rec.Body.Len())
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/sw.js", nil))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "url.pathname.startsWith('/api/')") {
+		t.Fatalf("GET /sw.js missing /api/ bypass")
 	}
 }

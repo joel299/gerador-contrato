@@ -1172,6 +1172,31 @@
         b.className = `banner-feedback ${type}`;
         b.textContent = text;
       }
+      function showActionBanner(type, text, actions) {
+        const b = document.getElementById('formBanner');
+        b.className = `banner-feedback ${type}`;
+        b.innerHTML = '';
+        const msgEl = document.createElement('div');
+        msgEl.textContent = text;
+        b.appendChild(msgEl);
+        if (actions && actions.length > 0) {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;';
+          actions.forEach(act => {
+            const a = document.createElement('a');
+            a.className = act.primary ? 'btn btn-sm btn-primary' : 'btn btn-sm';
+            a.href = act.href;
+            a.textContent = act.label;
+            if (act.download) a.setAttribute('download', act.download);
+            if (act.external) {
+              a.target = '_blank';
+              a.rel = 'noopener';
+            }
+            row.appendChild(a);
+          });
+          b.appendChild(row);
+        }
+      }
       function clearBanner() {
         const b = document.getElementById('formBanner');
         b.className = 'banner-feedback';
@@ -1361,30 +1386,39 @@
       }
 
       async function generateAndFetchPDFBlob(contract) {
-        const pdfRes = await fetch(`/api/contracts/${contract.id}/pdf`, { method: 'POST' });
+        const pdfRes = await fetch(`/api/contracts/${contract.id}/pdf`, {
+          method: 'POST',
+          cache: 'no-store'
+        });
         const pdfMeta = await pdfRes.json();
         if (!pdfRes.ok) {
-          throw new Error(pdfMeta.error || 'Falha ao gerar PDF.');
+          throw new Error(pdfMeta.error || 'Falha ao gerar o arquivo PDF.');
         }
-        const fileRes = await fetch(pdfMeta.download_url || `/api/contracts/${contract.id}/pdf`);
+        const directUrl = pdfMeta.download_url || `/api/contracts/${contract.id}/pdf`;
+        const fileRes = await fetch(directUrl, { cache: 'no-store' });
         if (!fileRes.ok) {
           throw new Error('Falha ao baixar o arquivo PDF gerado.');
         }
         const blob = await fileRes.blob();
         const filename = sanitizeFilename(contract.client_company_name);
-        return { blob, filename, pdfMeta };
+        return { blob, filename, directUrl, pdfMeta };
       }
 
-      // Fluxo 1: Exportar PDF e Enviar no WhatsApp
-      document.getElementById('exportWhatsAppBtn').addEventListener('click', async () => {
-        const btn = document.getElementById('exportWhatsAppBtn');
-        btn.disabled = true;
-        btn.textContent = 'Gerando PDF e preparando WhatsApp...';
+      async function exportarPDF(enviarWhatsApp) {
+        const waBtn = document.getElementById('exportWhatsAppBtn');
+        const dlBtn = document.getElementById('downloadOnlyBtn');
+        const activeBtn = enviarWhatsApp ? waBtn : dlBtn;
+        const origText = activeBtn.textContent;
+
+        waBtn.disabled = true;
+        dlBtn.disabled = true;
+        activeBtn.textContent = 'Gerando PDF...';
+
         try {
           const saved = await persistContract(true);
           if (!saved) return;
 
-          const { blob, filename, pdfMeta } = await generateAndFetchPDFBlob(saved);
+          const { blob, filename, directUrl } = await generateAndFetchPDFBlob(saved);
           const waDigits = normalizeWhatsAppBrazil(saved.client_phone);
           const { n, method } = parseInstallmentOption();
           const { totalFinalCents, installmentCents } = calculateSetupInstallments(saved.setup_fee_cents || 0, n, method);
@@ -1399,57 +1433,58 @@
             msg = `Olá, ${repName}! Segue o Contrato de Prestação de Serviços da IA Infinito para assinatura digital.\n\nConforme combinado, segue também o link para pagamento da implantação (${condLabel}):\n${payLink}\n\nQualquer dúvida, estou à disposição!`;
           }
 
+          const waUrl = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}` : '';
+          const actions = [{ label: 'Baixar PDF Novamente', href: directUrl, download: filename, primary: !enviarWhatsApp }];
+          if (enviarWhatsApp && waUrl) {
+            actions.push({ label: 'Abrir WhatsApp', href: waUrl, external: true, primary: true });
+          }
+
           const pdfFile = new File([blob], filename, { type: 'application/pdf' });
           const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+          const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-          if (isMobile && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+          // Tentativa 1: Web Share API Level 2 no mobile (com fallback automático se gesto expirar)
+          if (enviarWhatsApp && isMobile && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
             try {
               await navigator.share({
                 files: [pdfFile],
-                title: `Contrato IA Infinito — ${saved.client_company_name}`,
+                title: filename,
                 text: msg
               });
-              showBanner('success', `PDF ${filename} compartilhado (${pdfMeta.storage_provider}).`);
+              showActionBanner('success', `PDF ${filename} gerado e compartilhado com sucesso.`, actions);
               return;
             } catch (shareErr) {
               if (shareErr && shareErr.name === 'AbortError') {
-                showBanner('info', 'Compartilhamento cancelado. Baixando PDF...');
+                showActionBanner('info', 'Compartilhamento cancelado. Use os botões abaixo para baixar o PDF ou abrir o WhatsApp.', actions);
+                return;
               }
+              // NotAllowedError (expiração de user gesture) ou outra falha: segue para Tentativa 2
             }
           }
 
+          // Tentativa 2: Download universal (Blob + fallback direto em PWA standalone)
           triggerBlobDownload(blob, filename);
-          if (waDigits) {
-            const waUrl = `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}`;
-            window.open(waUrl, '_blank', 'noopener');
+          if (isStandalone) {
+            window.location.assign(directUrl);
           }
-          showBanner('success', `PDF ${filename} baixado e WhatsApp aberto para envio!`);
-        } catch (err) {
-          showBanner('error', err.message || 'Erro inesperado ao exportar PDF.');
-        } finally {
-          btn.disabled = false;
-          btn.textContent = 'Exportar PDF e Enviar no WhatsApp';
-        }
-      });
 
-      // Fluxo 2: Apenas Baixar PDF
-      document.getElementById('downloadOnlyBtn').addEventListener('click', async () => {
-        const btn = document.getElementById('downloadOnlyBtn');
-        btn.disabled = true;
-        btn.textContent = 'Gerando PDF...';
-        try {
-          const saved = await persistContract(true);
-          if (!saved) return;
-          const { blob, filename, pdfMeta } = await generateAndFetchPDFBlob(saved);
-          triggerBlobDownload(blob, filename);
-          showBanner('success', `PDF ${filename} salvo (${pdfMeta.storage_provider}) e baixado.`);
+          if (enviarWhatsApp && waUrl) {
+            window.open(waUrl, '_blank', 'noopener');
+            showActionBanner('success', `PDF ${filename} pronto. Se o WhatsApp não abriu automaticamente, toque nos botões abaixo:`, actions);
+          } else {
+            showActionBanner('success', `PDF ${filename} gerado e baixado com sucesso.`, actions);
+          }
         } catch (err) {
-          showBanner('error', err.message || 'Erro ao baixar PDF.');
+          showBanner('error', (err && err.message) ? err.message : 'Não foi possível gerar o PDF. Tente novamente.');
         } finally {
-          btn.disabled = false;
-          btn.textContent = 'Apenas Baixar PDF';
+          waBtn.disabled = false;
+          dlBtn.disabled = false;
+          activeBtn.textContent = origText;
         }
-      });
+      }
+
+      document.getElementById('exportWhatsAppBtn').addEventListener('click', () => exportarPDF(true));
+      document.getElementById('downloadOnlyBtn').addEventListener('click', () => exportarPDF(false));
 
       // Salvar Rascunho
       document.getElementById('saveDraftBtn').addEventListener('click', async () => {

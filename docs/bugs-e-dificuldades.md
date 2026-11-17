@@ -1,7 +1,7 @@
 # Bugs e dificuldades — Gerador de Contratos IA Infinito
 
 **Última atualização:** 17/11/2026  
-**Status do registro:** 4 ocorrências técnicas registradas e resolvidas (`BUG-001` a `BUG-004`); riscos preventivos mantidos sob controle.
+**Status do registro:** 5 ocorrências técnicas registradas e resolvidas (`BUG-001` a `BUG-005`); riscos preventivos mantidos sob controle.
 
 ## Como usar este arquivo
 
@@ -12,6 +12,21 @@ Sempre que um bug for registrado ou atualizado aqui, atualizar também `estado-a
 ---
 
 ## Ocorrências registradas
+
+### BUG-005 — Falha na geração/download de PDF em modo PWA mobile por expiração de user gesture e blob standalone
+- **Data:** 17/11/2026
+- **Estado:** **Resolvido**
+- **Sintoma:** No desktop o PDF era gerado normalmente, porém no navegador móvel e no PWA instalado (`display: standalone`) o arquivo não era baixado nem compartilhado ao clicar em **Exportar PDF e Enviar no WhatsApp** ou **Apenas Baixar PDF**.
+- **Evidência:**
+  1. `navigator.share({ files })` era chamado após múltiplos `await` (`POST /api/contracts`, `POST /pdf`, `fetch` do blob), excedendo a janela de *user gesture* e causando `NotAllowedError` no Android/iOS.
+  2. Em modo PWA `standalone`, `<a download>` com URL `blob:` é frequentemente ignorado no iOS Safari / WebViews Android.
+  3. `GET /api/contracts/{id}/pdf` retornava 404 se o PDF ainda não existisse previamente e usava `inline` em vez de `attachment` com nome ASCII sanitizado.
+- **Causa raiz comprovada:** Expiração de *user gesture* antes de `navigator.share`, dependência exclusiva de `blob:` download em PWA `standalone` e ausência de geração sob demanda + headers mobile-safe no `GET /api/contracts/{id}/pdf`.
+- **Correção aplicada:**
+  1. `internal/handler/contract_handler.go`: `GET /api/contracts/{id}/pdf` agora gera o PDF sob demanda se ainda não existir no storage e responde com `Content-Type: application/pdf`, `Content-Disposition: attachment; filename="Contrato_IA_Infinito_..."` (sanitizado ASCII), `Content-Length` e `Cache-Control: no-store`.
+  2. `web/sw.js`: atualizado para `ia-infinito-contratos-v2` com bypass imediato para `/api/` e métodos diferentes de `GET`.
+  3. `web/index.html`: fluxo `exportarPDF(enviarWhatsApp)` com estado de loading imediato, fallback automático de `navigator.share` (`NotAllowedError`) para download direto (`blob:` + `window.location.assign(directUrl)` em modo `standalone`) e banner de ação anti-bloqueio de pop-up com botões diretos **`Baixar PDF Novamente`** e **`Abrir WhatsApp`**.
+- **Validação:** `go vet ./...`, `go test -v ./...` (`TestHTTP_EndpointsAndPDFGeneration` validando `GET /api/contracts/{id}/pdf` sob demanda, headers mobile-safe e `sw.js` bypass) e `go build` aprovados.
 
 ### BUG-004 — Registros fictícios no banco principal e termos técnicos expostos na interface
 - **Data:** 17/11/2026

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"ia-infinito-contracts/internal/config"
@@ -179,6 +180,55 @@ func (h *ContractHandler) Update(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, existing)
 }
 
+func (h *ContractHandler) generateAndStorePDF(r *http.Request, c *domain.Contract) ([]byte, *service.StoredObject, error) {
+	var in domain.ContractInput
+	if err := json.Unmarshal([]byte(c.PayloadJSON), &in); err != nil {
+		in = domain.ContractInput{
+			ClientCompanyName:  c.ClientCompanyName,
+			ClientTradeName:    c.ClientTradeName,
+			ClientCNPJ:         c.ClientCNPJ,
+			ClientAddress:      c.ClientAddress,
+			ClientRepName:      c.ClientRepName,
+			ClientRepDocument:  c.ClientRepDocument,
+			ClientEmail:        c.ClientEmail,
+			ClientPhone:        c.ClientPhone,
+			SetupFeeCents:      c.SetupFeeCents,
+			SetupInstallments:  c.SetupInstallments,
+			SetupPaymentMethod: c.SetupPaymentMethod,
+			HasMonthlyFee:      &c.HasMonthlyFee,
+			MonthlyFeeCents:    c.MonthlyFeeCents,
+			PayOnSignature:     &c.PayOnSignature,
+			IncludeWitnesses:   &c.IncludeWitnesses,
+			DueDay:             c.DueDay,
+			StartDate:          c.StartDate,
+			CityForum:          c.CityForum,
+		}
+	}
+
+	html, err := h.render.RenderHTML(in)
+	if err != nil {
+		return nil, nil, fmt.Errorf("erro ao compilar template do contrato: %w", err)
+	}
+
+	pdfBytes, err := h.pdf.GeneratePDF(r.Context(), html)
+	if err != nil {
+		return nil, nil, fmt.Errorf("erro ao gerar PDF: %w", err)
+	}
+
+	now := time.Now()
+	key := fmt.Sprintf("contracts/%04d/%02d/%s_%s.pdf", now.Year(), now.Month(), c.Code, c.ClientCNPJ)
+	obj, err := h.storage.SavePDF(r.Context(), key, pdfBytes)
+	if err != nil {
+		return nil, nil, fmt.Errorf("erro ao armazenar PDF: %w", err)
+	}
+
+	if err := h.repo.UpdatePDFMetadata(r.Context(), c.ID, obj.Bucket, obj.Key, obj.SHA256Hex, domain.StatusGenerated); err != nil {
+		return nil, nil, fmt.Errorf("erro ao atualizar metadados do PDF: %w", err)
+	}
+
+	return pdfBytes, obj, nil
+}
+
 func (h *ContractHandler) GeneratePDF(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	c, err := h.repo.GetByID(r.Context(), id)
@@ -191,47 +241,9 @@ func (h *ContractHandler) GeneratePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var in domain.ContractInput
-	if err := json.Unmarshal([]byte(c.PayloadJSON), &in); err != nil {
-		in = domain.ContractInput{
-			ClientCompanyName: c.ClientCompanyName,
-			ClientTradeName:   c.ClientTradeName,
-			ClientCNPJ:        c.ClientCNPJ,
-			ClientAddress:     c.ClientAddress,
-			ClientRepName:     c.ClientRepName,
-			ClientRepDocument: c.ClientRepDocument,
-			ClientEmail:       c.ClientEmail,
-			ClientPhone:       c.ClientPhone,
-			SetupFeeCents:     c.SetupFeeCents,
-			MonthlyFeeCents:   c.MonthlyFeeCents,
-			DueDay:            c.DueDay,
-			StartDate:         c.StartDate,
-			CityForum:         c.CityForum,
-		}
-	}
-
-	html, err := h.render.RenderHTML(in)
+	_, obj, err := h.generateAndStorePDF(r, c)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao compilar template do contrato"})
-		return
-	}
-
-	pdfBytes, err := h.pdf.GeneratePDF(r.Context(), html)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("erro ao gerar PDF: %v", err)})
-		return
-	}
-
-	now := time.Now()
-	key := fmt.Sprintf("contracts/%04d/%02d/%s_%s.pdf", now.Year(), now.Month(), c.Code, c.ClientCNPJ)
-	obj, err := h.storage.SavePDF(r.Context(), key, pdfBytes)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao armazenar PDF"})
-		return
-	}
-
-	if err := h.repo.UpdatePDFMetadata(r.Context(), c.ID, obj.Bucket, obj.Key, obj.SHA256Hex, domain.StatusGenerated); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao atualizar metadados do PDF"})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
@@ -258,25 +270,68 @@ func (h *ContractHandler) DownloadPDF(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao buscar contrato"})
 		return
 	}
-	if c.S3Key == "" {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "PDF ainda não gerado para este contrato"})
-		return
+
+	var data []byte
+	if c.S3Key != "" {
+		data, err = h.storage.ReadPDF(r.Context(), c.S3Key)
+	}
+	if c.S3Key == "" || err != nil {
+		data, _, err = h.generateAndStorePDF(r, c)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "falha ao gerar arquivo PDF"})
+			return
+		}
 	}
 
-	// O PDF é servido pelo próprio app: em MinIO interno, a URL pré-assinada usa
-	// o host `http://minio:9000`, que o navegador do cliente não resolve.
-	data, err := h.storage.ReadPDF(r.Context(), c.S3Key)
-	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "arquivo PDF não encontrado no armazenamento"})
-		return
+	disposition := "attachment"
+	if r.URL.Query().Get("inline") == "1" {
+		disposition = "inline"
 	}
 
-	filename := fmt.Sprintf("%s_IA_Infinito.pdf", c.Code)
+	safeFilename := sanitizePDFFilename(c.ClientCompanyName, c.Code)
 	w.Header().Set("Content-Type", "application/pdf")
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, filename))
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`%s; filename="%s"`, disposition, safeFilename))
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)
+}
+
+var accentReplacer = strings.NewReplacer(
+	"á", "a", "à", "a", "â", "a", "ã", "a", "ä", "a",
+	"Á", "A", "À", "A", "Â", "A", "Ã", "A", "Ä", "A",
+	"é", "e", "è", "e", "ê", "e", "ë", "e",
+	"É", "E", "È", "E", "Ê", "E", "Ë", "E",
+	"í", "i", "ì", "i", "î", "i", "ï", "i",
+	"Í", "I", "Ì", "I", "Î", "I", "Ï", "I",
+	"ó", "o", "ò", "o", "ô", "o", "õ", "o", "ö", "o",
+	"Ó", "O", "Ò", "O", "Ô", "O", "Õ", "O", "Ö", "O",
+	"ú", "u", "ù", "u", "û", "u", "ü", "u",
+	"Ú", "U", "Ù", "U", "Û", "U", "Ü", "U",
+	"ç", "c", "Ç", "C", "ñ", "n", "Ñ", "N",
+)
+
+func sanitizePDFFilename(companyName, code string) string {
+	ascii := accentReplacer.Replace(companyName)
+	var b strings.Builder
+	prevUnderscore := false
+	for _, r := range ascii {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			prevUnderscore = false
+		} else if !prevUnderscore && b.Len() > 0 {
+			b.WriteByte('_')
+			prevUnderscore = true
+		}
+	}
+	clean := strings.Trim(b.String(), "_")
+	if clean == "" {
+		clean = code
+	}
+	if len(clean) > 48 {
+		clean = strings.Trim(clean[:48], "_")
+	}
+	return fmt.Sprintf("Contrato_IA_Infinito_%s.pdf", clean)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
