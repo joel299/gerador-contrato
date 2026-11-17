@@ -1,7 +1,7 @@
 # Bugs e dificuldades — Gerador de Contratos IA Infinito
 
 **Última atualização:** 17/11/2026  
-**Status do registro:** 5 ocorrências técnicas registradas e resolvidas (`BUG-001` a `BUG-005`); riscos preventivos mantidos sob controle.
+**Status do registro:** 6 ocorrências técnicas registradas e resolvidas (`BUG-001` a `BUG-006`); riscos preventivos mantidos sob controle.
 
 ## Como usar este arquivo
 
@@ -12,6 +12,18 @@ Sempre que um bug for registrado ou atualizado aqui, atualizar também `estado-a
 ---
 
 ## Ocorrências registradas
+
+### BUG-006 — WebView do PWA abrindo landing page `wa.me` em vez do app WhatsApp nativo
+- **Data:** 17/11/2026
+- **Estado:** **Resolvido**
+- **Sintoma:** No PWA instalado no celular, ao tentar enviar o contrato no WhatsApp, o sistema abria `https://wa.me/...` dentro de um navegador interno (Custom Tab/WebView) exibindo a tela de "Fazer download do WhatsApp" em vez de abrir o aplicativo instalado. Além disso, chamar `navigator.share({ files })` após `await fetch(...)` perdia o *user gesture*.
+- **Evidência:** O esquema `https://wa.me/` dentro de PWA `standalone` permanece em Custom Tab sem repassar para o app nativo em vários dispositivos móveis; `navigator.share` exige clique síncrono direto após o PDF já estar em memória.
+- **Causa raiz comprovada:** Uso de `https://wa.me/` no mobile/PWA em vez do protocolo nativo `whatsapp://send` e chamada de `navigator.share` após múltiplos `await` de rede.
+- **Correção aplicada:**
+  1. `web/index.html`: adicionada função `buildWhatsAppUrl(phoneDigits, text)` que retorna `whatsapp://send?phone=55...&text=...` no mobile/PWA (`window.location.href = waUrl`) e mantém `https://wa.me/...` no desktop.
+  2. `web/index.html`: banner pós-geração exibe 3 botões estruturais diretos com *user gesture* preservado: **`Compartilhar Arquivo PDF`** (`navigator.share({ files })` direto no clique), **`Abrir Conversa no WhatsApp`** (`whatsapp://send` no mobile) e **`Baixar PDF`**.
+  3. `web/sw.js`: cache incrementado para `ia-infinito-contratos-v3`.
+- **Validação:** `go vet ./...`, `go test -v ./...` e `go build` aprovados.
 
 ### BUG-005 — Falha na geração/download de PDF em modo PWA mobile por expiração de user gesture e blob standalone
 - **Data:** 17/11/2026

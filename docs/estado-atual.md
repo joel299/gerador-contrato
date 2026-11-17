@@ -1,7 +1,7 @@
 # Estado atual — Gerador de Contratos IA Infinito
 
 **Última atualização:** 17/11/2026  
-**Status:** **v1.7.1 (Correção PWA/Mobile PDF `BUG-005` + MinIO + CI/CD Coolify) Pronta para Deploy.** Corrigido `BUG-005` para exportação/download/compartilhamento de PDF em navegadores móveis e PWA `standalone`: `GET /api/contracts/{id}/pdf` com geração sob demanda e headers `attachment` + `no-store`, `sw.js` (`v2`) com bypass em `/api/` e fluxo resiliente no frontend com fallback anti-bloqueio de pop-up.
+**Status:** **v1.7.2 (Deep Link Nativo `whatsapp://send` + Web Share Direto no PWA) Pronta para Deploy.** Corrigido `BUG-006`: `buildWhatsAppUrl` usa `whatsapp://send?phone=55...` no mobile/PWA e `https://wa.me/...` no desktop; banner pós-geração oferece botões diretos **`Compartilhar Arquivo PDF`** (com *user gesture* preservado), **`Abrir Conversa no WhatsApp`** e **`Baixar PDF`**; Service Worker atualizado para `ia-infinito-contratos-v3`.
 
 ## Deploy em produção (verificado)
 

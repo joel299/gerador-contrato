@@ -1183,16 +1183,25 @@
           const row = document.createElement('div');
           row.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;';
           actions.forEach(act => {
-            const a = document.createElement('a');
-            a.className = act.primary ? 'btn btn-sm btn-primary' : 'btn btn-sm';
-            a.href = act.href;
-            a.textContent = act.label;
-            if (act.download) a.setAttribute('download', act.download);
-            if (act.external) {
-              a.target = '_blank';
-              a.rel = 'noopener';
+            if (typeof act.onClick === 'function') {
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = act.primary ? 'btn btn-sm btn-primary' : 'btn btn-sm';
+              btn.textContent = act.label;
+              btn.addEventListener('click', act.onClick);
+              row.appendChild(btn);
+            } else {
+              const a = document.createElement('a');
+              a.className = act.primary ? 'btn btn-sm btn-primary' : 'btn btn-sm';
+              a.href = act.href;
+              a.textContent = act.label;
+              if (act.download) a.setAttribute('download', act.download);
+              if (act.external) {
+                a.target = '_blank';
+                a.rel = 'noopener';
+              }
+              row.appendChild(a);
             }
-            row.appendChild(a);
           });
           b.appendChild(row);
         }
@@ -1374,6 +1383,17 @@
         return d;
       }
 
+      function buildWhatsAppUrl(phoneDigits, text) {
+        if (!phoneDigits) return '';
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.navigator.standalone === true;
+        if (isMobile) {
+          return `whatsapp://send?phone=${phoneDigits}&text=${encodeURIComponent(text)}`;
+        }
+        return `https://wa.me/${phoneDigits}?text=${encodeURIComponent(text)}`;
+      }
+
       function triggerBlobDownload(blob, filename) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1433,44 +1453,60 @@
             msg = `Olá, ${repName}! Segue o Contrato de Prestação de Serviços da IA Infinito para assinatura digital.\n\nConforme combinado, segue também o link para pagamento da implantação (${condLabel}):\n${payLink}\n\nQualquer dúvida, estou à disposição!`;
           }
 
-          const waUrl = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}` : '';
-          const actions = [{ label: 'Baixar PDF Novamente', href: directUrl, download: filename, primary: !enviarWhatsApp }];
-          if (enviarWhatsApp && waUrl) {
-            actions.push({ label: 'Abrir WhatsApp', href: waUrl, external: true, primary: true });
-          }
-
+          const waUrl = buildWhatsAppUrl(waDigits, msg);
           const pdfFile = new File([blob], filename, { type: 'application/pdf' });
           const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
           const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+          const canShareFiles = Boolean(navigator.canShare && navigator.canShare({ files: [pdfFile] }));
 
-          // Tentativa 1: Web Share API Level 2 no mobile (com fallback automático se gesto expirar)
-          if (enviarWhatsApp && isMobile && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-            try {
-              await navigator.share({
-                files: [pdfFile],
-                title: filename,
-                text: msg
-              });
-              showActionBanner('success', `PDF ${filename} gerado e compartilhado com sucesso.`, actions);
-              return;
-            } catch (shareErr) {
-              if (shareErr && shareErr.name === 'AbortError') {
-                showActionBanner('info', 'Compartilhamento cancelado. Use os botões abaixo para baixar o PDF ou abrir o WhatsApp.', actions);
-                return;
+          const actions = [];
+          if (canShareFiles) {
+            actions.push({
+              label: 'Compartilhar Arquivo PDF',
+              primary: true,
+              onClick: async () => {
+                try {
+                  await navigator.share({
+                    files: [pdfFile],
+                    title: filename,
+                    text: msg
+                  });
+                } catch (err) {
+                  if (err && err.name !== 'AbortError') {
+                    triggerBlobDownload(blob, filename);
+                  }
+                }
               }
-              // NotAllowedError (expiração de user gesture) ou outra falha: segue para Tentativa 2
-            }
+            });
           }
+          if (waUrl) {
+            actions.push({
+              label: 'Abrir Conversa no WhatsApp',
+              href: waUrl,
+              external: !isMobile && !isStandalone,
+              primary: !canShareFiles && enviarWhatsApp
+            });
+          }
+          actions.push({
+            label: 'Baixar PDF',
+            href: directUrl,
+            download: filename,
+            primary: !canShareFiles && !enviarWhatsApp
+          });
 
-          // Tentativa 2: Download universal (Blob + fallback direto em PWA standalone)
+          // Download universal (Blob + navegação direta em PWA standalone)
           triggerBlobDownload(blob, filename);
           if (isStandalone) {
             window.location.assign(directUrl);
           }
 
           if (enviarWhatsApp && waUrl) {
-            window.open(waUrl, '_blank', 'noopener');
-            showActionBanner('success', `PDF ${filename} pronto. Se o WhatsApp não abriu automaticamente, toque nos botões abaixo:`, actions);
+            if (isMobile || isStandalone) {
+              window.location.href = waUrl;
+            } else {
+              window.open(waUrl, '_blank', 'noopener');
+            }
+            showActionBanner('success', `PDF ${filename} gerado. Use as opções abaixo para compartilhar o arquivo ou abrir a conversa no WhatsApp:`, actions);
           } else {
             showActionBanner('success', `PDF ${filename} gerado e baixado com sucesso.`, actions);
           }
