@@ -12,7 +12,7 @@
 - **Persistência:** volumes nomeados `olnybeujwwk55ukczny7rwax_gerador-contrato-data:/app/data` (SQLite WAL) e `olnybeujwwk55ukczny7rwax_gerador-contrato-minio-data:/data` (objetos do MinIO).
 - **Limite de memória:** `app` com `mem_limit: 768m` e `minio` com `256m`; `pull_policy: always` para sempre buscar a imagem nova no redeploy.
 - **Healthcheck:** `GET /health` → `200 {"chromium_pool_ok":true,"sqlite_ok":true,"status":"ok","storage_provider":"s3"}`.
-- **Último deploy validado:** `ao8kbimwayuckln8zvcxtwa7`, commit `f034a9c`, status `finished`; workflow run `44158981542` verde.
+- **Último deploy validado:** `giflpf7ybabp9qxhtflccyza`, commit `857195e`, status `finished`; workflow run `44160099419` verde.
 
 ### Variáveis configuradas no Coolify
 
@@ -57,7 +57,7 @@ Cadastrados em `joel299/gerador-contrato` → Settings → Secrets and variables
 - Workflow run `44158981542` (commit `f034a9c`): verde; webhook acionou o deploy `ao8kbimwayuckln8zvcxtwa7` → `finished`.
 - `GET /health` em 17/11/2026: `{"chromium_pool_ok":true,"sqlite_ok":true,"status":"ok","storage_provider":"s3"}`.
 - Geração de PDF real no deploy (`POST /api/v1/contracts/{id}/pdf`): `200`, `storage_provider: "s3"`, `bucket: "contratos"`, `key: contracts/2026/11/CTR-2026-0002_*.pdf`, 213.353 bytes — confirma upload no bucket criado pelo `minio-init`.
-- **Limitação encontrada no download:** `GET /api/v1/contracts/{id}/pdf` responde `302` para uma URL pré-assinada com o host interno `http://minio:9000`, inacessível pelo navegador. O upload funciona; o download direto pelo endpoint público não. Correção exige decisão de arquitetura (proxy do PDF pelo `app` ou endpoint público dedicado para o MinIO) — pendente de autorização do Joel.
+- **Download corrigido:** `GET /api/v1/contracts/{id}/pdf` passou a servir o PDF pelo próprio `app` (antes redirecionava para `http://minio:9000`, host interno). Validado no deploy `giflpf7ybabp9qxhtflccyza`: `200`, `application/pdf`, 213.353 bytes, assinatura `%PDF`, `Content-Disposition` correto.
 
 ## Histórico funcional anterior (preservado)
 
@@ -84,6 +84,5 @@ Cadastrados em `joel299/gerador-contrato` → Settings → Secrets and variables
 ## Pendências e próximos passos
 
 1. **Domínio próprio (bloqueado por DNS):** `contratos.iainfinito.com.br` ainda não possui registro **A**; o DNS do domínio está no Cloudflare e `iainfinito.com.br` aponta para `185.244.219.19` (não para o servidor do Coolify `18.118.25.255`). Criar o registro A e depois adicionar o domínio ao serviço `app` (porta `8080`) no Coolify.
-2. **Download de PDF com S3:** decidir entre proxy no `app` (recomendado, mantém o MinIO privado) ou expor um endpoint público para o MinIO e pré-assinar com esse host. O upload já está validado.
-3. **Credencial GHCR formal (recomendado):** o pull da imagem privada funciona na VPS, mas convém cadastrar a credencial em **Servers → Registries** (escopo `read:packages`) para não depender de login manual no host.
-4. **Repositório e pacote:** o repositório está público; o pacote GHCR segue privado (o que exige credencial no Coolify). Torná-lo público é decisão do Joel.
+2. **Credencial GHCR formal (recomendado):** o pull da imagem privada funciona na VPS, mas convém cadastrar a credencial em **Servers → Registries** (escopo `read:packages`) para não depender de login manual no host.
+3. **Repositório e pacote:** o repositório está público; o pacote GHCR segue privado (o que exige credencial no Coolify). Torná-lo público é decisão do Joel.
