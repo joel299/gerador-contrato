@@ -148,15 +148,15 @@
 
     <section class="hero" aria-labelledby="pageTitle">
       <div class="hero-copy surface">
-        <span class="eyebrow">Go + SQLite (WAL) + S3 + Scalar · v1 Funcional</span>
-        <h1 id="pageTitle">Primeira versão (v1) concluída e validada.</h1>
-        <p class="intro">Sistema completo implementado em Go com <code>embed.FS</code>, SQLite em modo WAL, cliente BrasilAPI com cache e fallback, motor de PDF A4 via <code>chromedp</code> mantendo a logo oficial da <strong>IA Infinito</strong> em todas as páginas, camada S3 com fallback local, interface Split-Screen com Skeleton Loaders e documentação interativa Scalar em <code>/docs</code>.</p>
+        <span class="eyebrow">Go + SQLite (WAL) + S3 + Scalar · v1 em produção</span>
+        <h1 id="pageTitle">v1 em produção com deploy automatizado.</h1>
+        <p class="intro">Sistema completo implementado em Go com <code>embed.FS</code>, SQLite em modo WAL, cliente BrasilAPI com cache e fallback, motor de PDF A4 via <code>chromedp</code> mantendo a logo oficial da <strong>IA Infinito</strong> em todas as páginas, camada S3 com fallback local, interface Split-Screen com Skeleton Loaders e documentação interativa Scalar em <code>/docs</code>. Pipeline <strong>GitHub Actions → GHCR → Coolify</strong> publicando e implantando a cada push na <code>main</code>.</p>
       </div>
       <aside class="hero-stat surface" aria-label="Progresso verificado">
         <span class="stat-label">Progresso verificado do projeto</span>
         <div class="stat-value"><span>100%</span></div>
         <div class="progress-track" role="progressbar" aria-label="Progresso verificado" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div class="progress-fill"></div></div>
-        <div class="estimate"><strong>v1 Liberada</strong> · <code>go vet</code>, <code>go test</code> e <code>go build</code> aprovados.</div>
+        <div class="estimate"><strong>Deploy ativo</strong> · workflow verde, webhook HTTP 200 e container <code>healthy</code> em HTTPS.</div>
       </aside>
     </section>
 
@@ -190,9 +190,9 @@
         <div class="detail" aria-live="polite">
           <div>
             <h3 id="detailTitle">Testes &amp; Docker</h3>
-            <p id="detailCopy">Executados go vet ./..., go test -v ./... (domínio, repositório SQLite WAL, BrasilAPI, S3 fallback, template HTML e endpoints HTTP + geração real de PDF via chromedp) e go build, além de Dockerfile e docker-compose.yml.</p>
+            <p id="detailCopy">go vet ./..., go test ./... e go build aprovados, Dockerfile multi-stage com Chromium e pipeline GitHub Actions publicando a imagem no GHCR com deploy automático no Coolify.</p>
           </div>
-          <span class="tag" id="detailTag">CONCLUÍDO · v1 VALIDADA</span>
+          <span class="tag" id="detailTag">EM PRODUÇÃO · v1</span>
         </div>
       </div>
     </section>
@@ -206,6 +206,7 @@
           <li><span class="decision-title">S3 com fallback local</span><span class="decision-copy">Upload via <code>aws-sdk-go-v2</code> quando configurado no <code>.env</code> e gravação automática em <code>./data/pdfs</code> no modo local.</span></li>
           <li><span class="decision-title"><code>html/template</code> + <code>chromedp v0.23.1</code></span><span class="decision-copy">Pool persistente gerando PDF A4 com cabeçalho da IA Infinito e paginação em todas as páginas.</span></li>
           <li><span class="decision-title">Documentação interativa via Scalar</span><span class="decision-copy">Rota <code>/docs</code> servindo OpenAPI 3.1 e endpoints compatíveis em <code>/api/*</code> e <code>/api/v1/*</code>.</span></li>
+          <li><span class="decision-title">Deploy contínuo GitHub Actions → GHCR → Coolify</span><span class="decision-copy">Imagem <code>linux/amd64</code> com Chromium, tag <code>:coolify</code>, webhook de deploy autenticado por token e <code>pull_policy: always</code> para garantir a versão nova a cada push.</span></li>
         </ul>
       </article>
       <article class="list-panel surface">
@@ -217,6 +218,7 @@
           <div class="phase complete"><span class="phase-name">Template HTML A4, motor PDF (chromedp) e S3</span><span>concluído</span></div>
           <div class="phase complete"><span class="phase-name">Interface Split-Screen (Skeletons + Busca) e Scalar</span><span>concluído</span></div>
           <div class="phase complete"><span class="phase-name">Testes automatizados (go test) e Docker</span><span>concluído</span></div>
+          <div class="phase complete"><span class="phase-name">Pipeline CI/CD (GitHub Actions + GHCR) e deploy no Coolify</span><span>concluído</span></div>
         </div>
       </article>
     </section>
@@ -228,6 +230,18 @@
       </div>
       <article class="list-panel surface">
         <ul class="plain-list">
+          <li>
+            <span class="decision-title">17/11/2026 · MinIO S3 integrado ao stack Coolify (app + minio + minio-init)</span>
+            <span class="decision-copy">Adicionados serviços <code>minio</code> (<code>256m</code>, volume <code>gerador_contrato_minio_data:/data</code>) e <code>minio-init</code> (criação automática do bucket <code>contratos</code> via <code>mc mb --ignore-existing</code>) em <code>docker-compose.coolify.yml</code>, com o <code>app</code> conectado via <code>http://minio:9000</code> e <code>S3_USE_PATH_STYLE=true</code> (validado por <code>TestStorageService_S3PathStyleConfig</code>). No Coolify, basta preencher <code>MINIO_ROOT_USER</code> e <code>MINIO_ROOT_PASSWORD</code>.</span>
+          </li>
+          <li>
+            <span class="decision-title">17/11/2026 · CI/CD validado e v1 em produção no Coolify</span>
+            <span class="decision-copy">Recurso <strong>Docker Compose</strong> criado no Coolify (projeto <code>IA Infinito</code>, ambiente <code>production</code>) apontando para <code>joel299/gerador-contrato</code> na <code>main</code> com compose <code>docker-compose.coolify.yml</code> e imagem <code>ghcr.io/joel299/gerador-contrato:coolify</code>. Porta interna <code>8080</code>, volume persistente em <code>/app/data</code>, <code>mem_limit: 768m</code> e healthcheck em <code>/health</code>. Domínio HTTPS no padrão <code>sslip.io</code> gerenciado pelo Coolify. Secrets <code>COOLIFY_DEPLOY_WEBHOOK</code> e <code>COOLIFY_DEPLOY_TOKEN</code> cadastrados no GitHub. Workflow <code>44155345572</code> verde nos dois jobs, webhook com <strong>HTTP 200</strong>, deploy <code>finished</code> e aplicação <code>running:healthy</code> com <code>chromium_pool_ok</code> e <code>sqlite_ok</code> verdadeiros.</span>
+          </li>
+          <li>
+            <span class="decision-title">17/11/2026 · Correções de build na imagem e no CI</span>
+            <span class="decision-copy">O build Docker falhava porque <code>cmd/server/main.go</code> nunca foi versionado (a regra <code>server</code> do <code>.gitignore</code> ignorava a pasta); regra ajustada para <code>/server</code> e arquivo versionado. O teste de PDF real falhava no runner sem Chrome (<code>chromedp ... context deadline exceeded</code>); adicionado <code>browser-actions/setup-chrome</code> com <code>CHROME_PATH</code>. Na imagem, criado symlink estável <code>/usr/local/bin/chrome</code>, incluído <code>tzdata</code> com <code>TZ=America/Campo_Grande</code> e compose parametrizado por variáveis do Coolify.</span>
+          </li>
           <li>
             <span class="decision-title">17/11/2026 · Pipeline CI/CD Coolify (GitHub Actions + GHCR)</span>
             <span class="decision-copy">Configurados <code>Dockerfile</code> multi-stage (<code>golang:1.26-alpine</code> + <code>alpine:3.20</code> com Chromium e fontes pt-BR, usuário não-root), <code>.dockerignore</code>, <code>docker-compose.coolify.yml</code> (<code>mem_limit: 768m</code>, volume <code>/app/data</code>) e workflow <code>.github/workflows/publish-coolify-image.yml</code> (<code>go vet</code> + <code>go test</code> + push <code>ghcr.io/joel299/gerador-contrato:coolify</code> + webhook Coolify).</span>
@@ -273,10 +287,10 @@
     </section>
 
     <aside class="note surface">
-      <strong>Base dos 100%:</strong> Todos os módulos da v1 foram implementados, testados via <code>go test -v ./...</code> (incluindo geração real de PDF A4 com <code>chromedp</code>), verificados com <code>go vet ./...</code> e compilados com <code>go build</code>.
+      <strong>Base dos 100%:</strong> Módulos da v1 implementados e testados com <code>go test ./...</code> (incluindo geração real de PDF A4 com <code>chromedp</code>), verificados com <code>go vet ./...</code>, compilados com <code>go build</code> e publicados pelo workflow <code>44155345572</code> (testes + build GHCR + webhook Coolify HTTP 200).
     </aside>
 
-    <footer>Atualizado em 17/11/2026 · v1 funcional pronta para teste manual. Detalhes em <code>docs/estado-atual.md</code> e <code>docs/bugs-e-dificuldades.md</code>.</footer>
+    <footer>Atualizado em 17/11/2026 · v1 em produção com deploy automatizado. Detalhes em <code>docs/estado-atual.md</code> e <code>docs/bugs-e-dificuldades.md</code>.</footer>
   </main>
   <script>
     const steps = [
@@ -284,7 +298,7 @@
       { title: 'Skeleton & SQLite', copy: 'go.mod, estrutura Go, config, domínio (CNPJ/CPF/BRL/extenso), SQLite em modo WAL com migrations automáticas e cliente BrasilAPI com cache e fallback.', tag: 'CONCLUÍDO' },
       { title: 'PDF & S3', copy: 'Template HTML/CSS A4 oficial (contract_v1.html), pool persistente chromedp v0.23.1 com cabeçalho/rodapé em todas as páginas e StorageProvider S3 + fallback local.', tag: 'CONCLUÍDO' },
       { title: 'UI & Scalar', copy: 'Interface Split-Screen (web/index.html) com Liquid Glass estabilizado, temas Escuro/Claro, Skeleton Loaders, modal de busca SQLite e Scalar em /docs.', tag: 'CONCLUÍDO' },
-      { title: 'Testes & Docker', copy: 'Executados go vet ./..., go test -v ./... e go build com 100% de aprovação, além de Dockerfile multi-stage e docker-compose.yml.', tag: 'CONCLUÍDO · v1 VALIDADA' }
+      { title: 'Testes & Docker', copy: 'go vet ./..., go test ./... (incluindo PDF real via chromedp) e go build aprovados. Dockerfile multi-stage com Chromium, workflow GitHub Actions publicando ghcr.io/joel299/gerador-contrato:coolify e deploy no Coolify com webhook HTTP 200, healthcheck e HTTPS ativos.', tag: 'CONCLUÍDO · EM PRODUÇÃO' }
     ];
     const nodes = [...document.querySelectorAll('.node')];
     function selectStep(node) {

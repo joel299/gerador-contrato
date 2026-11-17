@@ -130,12 +130,13 @@ docker build -t ia-infinito-contracts:latest .
 docker run -d -p 8080:8080 -v $(pwd)/data:/app/data --name contratos-ia ia-infinito-contracts:latest
 ```
 
-### 3. Deploy Automatizado (GitHub Actions + GHCR + Coolify)
+### 3. Deploy Automatizado (GitHub Actions + GHCR + Coolify + MinIO S3)
 
-O pipeline em `.github/workflows/publish-coolify-image.yml` executa `go vet` e `go test`, constrói a imagem `linux/amd64` (`ghcr.io/joel299/gerador-contrato:coolify` e `sha-<commit>`) e aciona o webhook do Coolify usando `docker-compose.coolify.yml`:
+O pipeline em `.github/workflows/publish-coolify-image.yml` executa `go vet` e `go test`, constrói a imagem `linux/amd64` (`ghcr.io/joel299/gerador-contrato:coolify` e `sha-<commit>`) e aciona o webhook do Coolify usando `docker-compose.coolify.yml`, que já sobe a stack completa (`app` + `minio` + `minio-init`):
 
 - **Porta interna:** `8080` (sem proxy Traefik próprio; gerenciado pelo Coolify).
-- **Volume persistente:** `gerador_contrato_data:/app/data` (SQLite WAL e PDFs locais).
+- **MinIO S3 integrado:** no painel do Coolify, basta definir **`MINIO_ROOT_USER`** (ex.: `admin_iainfinito`) e **`MINIO_ROOT_PASSWORD`** (mínimo 8 caracteres). O container `minio-init` cria automaticamente o bucket `contratos` (ou `S3_BUCKET`) e conecta o `app` via `http://minio:9000` com `S3_USE_PATH_STYLE=true`.
+- **Volumes persistentes:** `gerador_contrato_data:/app/data` (SQLite WAL) e `gerador_contrato_minio_data:/data` (PDFs no MinIO).
 - **Secrets no GitHub Actions:** `COOLIFY_DEPLOY_WEBHOOK` e `COOLIFY_DEPLOY_TOKEN`.
 
 ---

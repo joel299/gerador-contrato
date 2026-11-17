@@ -1,7 +1,7 @@
 # Estado atual — Gerador de Contratos IA Infinito
 
 **Última atualização:** 17/11/2026  
-**Status:** **v1.6 em produção com CI/CD automatizado (GitHub Actions → GHCR → Coolify).** Pipeline verde de ponta a ponta: testes, build `linux/amd64`, push para `ghcr.io/joel299/gerador-contrato:coolify`, chamada do webhook do Coolify com retorno **HTTP 200** e container `healthy` servindo HTTPS.
+**Status:** **v1.6 em produção com CI/CD automatizado e MinIO S3 integrado no Coolify.** `docker-compose.coolify.yml` atualizado com serviços `minio` (`256m`, `gerador_contrato_minio_data:/data`), `minio-init` (criação automática do bucket `contratos`) e `app` conectado internamente via `http://minio:9000` com `S3_USE_PATH_STYLE=true`. Basta definir `MINIO_ROOT_USER` e `MINIO_ROOT_PASSWORD` no painel do Coolify.
 
 ## Deploy em produção (verificado)
 

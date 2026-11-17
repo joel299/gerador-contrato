@@ -231,6 +231,10 @@
       <article class="list-panel surface">
         <ul class="plain-list">
           <li>
+            <span class="decision-title">17/11/2026 · MinIO S3 integrado ao stack Coolify (app + minio + minio-init)</span>
+            <span class="decision-copy">Adicionados serviços <code>minio</code> (<code>256m</code>, volume <code>gerador_contrato_minio_data:/data</code>) e <code>minio-init</code> (criação automática do bucket <code>contratos</code> via <code>mc mb --ignore-existing</code>) em <code>docker-compose.coolify.yml</code>, com o <code>app</code> conectado via <code>http://minio:9000</code> e <code>S3_USE_PATH_STYLE=true</code> (validado por <code>TestStorageService_S3PathStyleConfig</code>). No Coolify, basta preencher <code>MINIO_ROOT_USER</code> e <code>MINIO_ROOT_PASSWORD</code>.</span>
+          </li>
+          <li>
             <span class="decision-title">17/11/2026 · CI/CD validado e v1 em produção no Coolify</span>
             <span class="decision-copy">Recurso <strong>Docker Compose</strong> criado no Coolify (projeto <code>IA Infinito</code>, ambiente <code>production</code>) apontando para <code>joel299/gerador-contrato</code> na <code>main</code> com compose <code>docker-compose.coolify.yml</code> e imagem <code>ghcr.io/joel299/gerador-contrato:coolify</code>. Porta interna <code>8080</code>, volume persistente em <code>/app/data</code>, <code>mem_limit: 768m</code> e healthcheck em <code>/health</code>. Domínio HTTPS no padrão <code>sslip.io</code> gerenciado pelo Coolify. Secrets <code>COOLIFY_DEPLOY_WEBHOOK</code> e <code>COOLIFY_DEPLOY_TOKEN</code> cadastrados no GitHub. Workflow <code>44155345572</code> verde nos dois jobs, webhook com <strong>HTTP 200</strong>, deploy <code>finished</code> e aplicação <code>running:healthy</code> com <code>chromium_pool_ok</code> e <code>sqlite_ok</code> verdadeiros.</span>
           </li>
