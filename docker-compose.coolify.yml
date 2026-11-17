@@ -9,9 +9,10 @@ services:
     volumes:
       - gerador_contrato_data:/app/data
     environment:
-      PORT: "8080"
-      DB_PATH: /app/data/contracts.db
-      LOCAL_PDF_DIR: /app/data/pdfs
+      PORT: "${PORT:-8080}"
+      DB_PATH: "${DB_PATH:-/app/data/contracts.db}"
+      LOCAL_PDF_DIR: "${LOCAL_PDF_DIR:-/app/data/pdfs}"
+      TZ: "${TZ:-America/Campo_Grande}"
       S3_ENDPOINT: ${S3_ENDPOINT:-}
       S3_BUCKET: ${S3_BUCKET:-}
       S3_REGION: ${S3_REGION:-us-east-1}
