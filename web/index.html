@@ -1192,13 +1192,17 @@
               row.appendChild(btn);
             } else {
               const a = document.createElement('a');
+              if (act.id) a.id = act.id;
               a.className = act.primary ? 'btn btn-sm btn-primary' : 'btn btn-sm';
               a.href = act.href;
               a.textContent = act.label;
               if (act.download) a.setAttribute('download', act.download);
-              if (act.external) {
+              if (act.target) {
+                a.target = act.target;
+                a.rel = 'noopener noreferrer';
+              } else if (act.external) {
                 a.target = '_blank';
-                a.rel = 'noopener';
+                a.rel = 'noopener noreferrer';
               }
               row.appendChild(a);
             }
@@ -1385,13 +1389,16 @@
 
       function buildWhatsAppUrl(phoneDigits, text) {
         if (!phoneDigits) return '';
-        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-          window.matchMedia('(display-mode: standalone)').matches ||
-          window.navigator.standalone === true;
-        if (isMobile) {
-          return `whatsapp://send?phone=${phoneDigits}&text=${encodeURIComponent(text)}`;
+        const ua = navigator.userAgent || '';
+        const encodedText = encodeURIComponent(text);
+        if (/Android/i.test(ua)) {
+          const fallback = `https://api.whatsapp.com/send?phone=${phoneDigits}&text=${encodedText}`;
+          return `intent://send?phone=${phoneDigits}&text=${encodedText}#Intent;scheme=whatsapp;S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
         }
-        return `https://wa.me/${phoneDigits}?text=${encodeURIComponent(text)}`;
+        if (/iPhone|iPad|iPod/i.test(ua)) {
+          return `https://api.whatsapp.com/send?phone=${phoneDigits}&text=${encodedText}`;
+        }
+        return `https://web.whatsapp.com/send?phone=${phoneDigits}&text=${encodedText}`;
       }
 
       function triggerBlobDownload(blob, filename) {
@@ -1481,9 +1488,10 @@
           }
           if (waUrl) {
             actions.push({
+              id: 'btnOpenWhatsapp',
               label: 'Abrir Conversa no WhatsApp',
               href: waUrl,
-              external: !isMobile && !isStandalone,
+              target: (isMobile || isStandalone) ? '_top' : '_blank',
               primary: !canShareFiles && enviarWhatsApp
             });
           }
@@ -1501,12 +1509,10 @@
           }
 
           if (enviarWhatsApp && waUrl) {
-            if (isMobile || isStandalone) {
-              window.location.href = waUrl;
-            } else {
-              window.open(waUrl, '_blank', 'noopener');
+            if (!isMobile && !isStandalone) {
+              window.open(waUrl, '_blank', 'noopener,noreferrer');
             }
-            showActionBanner('success', `PDF ${filename} gerado. Use as opções abaixo para compartilhar o arquivo ou abrir a conversa no WhatsApp:`, actions);
+            showActionBanner('success', `PDF ${filename} pronto! Toque em "Compartilhar Arquivo PDF" para enviar o arquivo direto ou em "Abrir Conversa no WhatsApp":`, actions);
           } else {
             showActionBanner('success', `PDF ${filename} gerado e baixado com sucesso.`, actions);
           }

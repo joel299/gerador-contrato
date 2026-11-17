@@ -1,7 +1,7 @@
 # Bugs e dificuldades — Gerador de Contratos IA Infinito
 
 **Última atualização:** 17/11/2026  
-**Status do registro:** 6 ocorrências técnicas registradas e resolvidas (`BUG-001` a `BUG-006`); riscos preventivos mantidos sob controle.
+**Status do registro:** 7 ocorrências técnicas registradas e resolvidas (`BUG-001` a `BUG-007`); riscos preventivos mantidos sob controle.
 
 ## Como usar este arquivo
 
@@ -12,6 +12,18 @@ Sempre que um bug for registrado ou atualizado aqui, atualizar também `estado-a
 ---
 
 ## Ocorrências registradas
+
+### BUG-007 — `ERR_UNKNOWN_URL_SCHEME` no Custom Tab / PWA Android ao usar esquema `whatsapp://`
+- **Data:** 17/11/2026
+- **Estado:** **Resolvido**
+- **Sintoma:** No Chrome Custom Tab / PWA Android, redirecionar via `window.location.href = 'whatsapp://send?...'` após `await fetch` era bloqueado pelo Chromium com `ERR_UNKNOWN_URL_SCHEME`.
+- **Evidência:** O engine Chromium do Android bloqueia navegação programática para esquemas customizados (`whatsapp://`) em callbacks assíncronos sem suporte a `intent://` e fallback HTTP.
+- **Causa raiz comprovada:** Uso de `window.location.href = 'whatsapp://...'` após `await fetch` em vez de `intent://...#Intent;scheme=whatsapp;S.browser_fallback_url=...;end` em `<a id="btnOpenWhatsapp" target="_top">` no Android e Universal Link `https://api.whatsapp.com/send` no iOS.
+- **Correção aplicada:**
+  1. `web/index.html`: removido redirecionamento automático para `whatsapp://` após `await fetch`; `buildWhatsAppUrl` agora gera `intent://send?...#Intent;scheme=whatsapp;S.browser_fallback_url=...;end` no Android, `https://api.whatsapp.com/send?...` no iOS e `https://web.whatsapp.com/send?...` no desktop.
+  2. `web/index.html`: botão **`Abrir Conversa no WhatsApp`** renderizado como `<a id="btnOpenWhatsapp" target="_top" rel="noopener noreferrer">` no mobile/PWA, ao lado de **`Compartilhar Arquivo PDF`** (`navigator.share` direto no clique) e **`Baixar PDF`**.
+  3. `web/sw.js`: atualizado para `ia-infinito-contratos-v4`.
+- **Validação:** `go vet ./...`, `go test -v ./...` e `go build` aprovados.
 
 ### BUG-006 — WebView do PWA abrindo landing page `wa.me` em vez do app WhatsApp nativo
 - **Data:** 17/11/2026

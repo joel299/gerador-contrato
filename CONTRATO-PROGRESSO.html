@@ -231,6 +231,10 @@
       <article class="list-panel surface">
         <ul class="plain-list">
           <li>
+            <span class="decision-title">17/11/2026 · v1.7.3 — Correção `ERR_UNKNOWN_URL_SCHEME` no Android PWA (BUG-007)</span>
+            <span class="decision-copy">Corrigido <code>BUG-007</code>: removido redirecionamento automático <code>whatsapp://</code> após <code>await fetch</code>. <code>buildWhatsAppUrl</code> agora usa <code>intent://send?...#Intent;scheme=whatsapp;S.browser_fallback_url=...;end</code> no Android, <code>https://api.whatsapp.com/send</code> no iOS e <code>https://web.whatsapp.com/send</code> no desktop em <code>&lt;a id="btnOpenWhatsapp" target="_top"&gt;</code>. Service Worker atualizado para <code>ia-infinito-contratos-v4</code>.</span>
+          </li>
+          <li>
             <span class="decision-title">17/11/2026 · v1.7.2 — WhatsApp Nativo (`whatsapp://send`) e Compartilhamento Direto no PWA (BUG-006)</span>
             <span class="decision-copy">Corrigido <code>BUG-006</code>: implementada <code>buildWhatsAppUrl</code> usando protocolo nativo <code>whatsapp://send?phone=55...</code> via <code>window.location.href</code> no mobile/PWA e <code>https://wa.me/...</code> no desktop. Banner pós-geração exibe botões estruturais diretos <strong>Compartilhar Arquivo PDF</strong> (<code>navigator.share</code> com <em>user gesture</em> preservado), <strong>Abrir Conversa no WhatsApp</strong> e <strong>Baixar PDF</strong>. Service Worker atualizado para <code>ia-infinito-contratos-v3</code>.</span>
           </li>

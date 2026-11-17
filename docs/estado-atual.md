@@ -1,7 +1,7 @@
 # Estado atual — Gerador de Contratos IA Infinito
 
 **Última atualização:** 17/11/2026  
-**Status:** **v1.7.2 (Deep Link Nativo `whatsapp://send` + Web Share Direto no PWA) Pronta para Deploy.** Corrigido `BUG-006`: `buildWhatsAppUrl` usa `whatsapp://send?phone=55...` no mobile/PWA e `https://wa.me/...` no desktop; banner pós-geração oferece botões diretos **`Compartilhar Arquivo PDF`** (com *user gesture* preservado), **`Abrir Conversa no WhatsApp`** e **`Baixar PDF`**; Service Worker atualizado para `ia-infinito-contratos-v3`.
+**Status:** **v1.7.3 (Correção `ERR_UNKNOWN_URL_SCHEME` Android `intent://` + `<a target="_top">`) Pronta para Deploy.** Corrigido `BUG-007`: removido redirecionamento automático para `whatsapp://` após `await fetch`; `buildWhatsAppUrl` gera `intent://send?...#Intent;scheme=whatsapp;S.browser_fallback_url=...;end` no Android, `https://api.whatsapp.com/send` no iOS e `https://web.whatsapp.com/send` no desktop; Service Worker atualizado para `ia-infinito-contratos-v4`.
 
 ## Deploy em produção (verificado)
 
