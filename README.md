@@ -136,6 +136,9 @@ O pipeline em `.github/workflows/publish-coolify-image.yml` executa `go vet` e `
 
 - **Porta interna:** `8080` (sem proxy Traefik próprio; gerenciado pelo Coolify).
 - **MinIO S3 integrado:** no painel do Coolify, basta definir **`MINIO_ROOT_USER`** (ex.: `admin_iainfinito`) e **`MINIO_ROOT_PASSWORD`** (mínimo 8 caracteres). O container `minio-init` cria automaticamente o bucket `contratos` (ou `S3_BUCKET`) e conecta o `app` via `http://minio:9000` com `S3_USE_PATH_STYLE=true`.
+- **Imagens do MinIO:** `pgsty/silo` e `pgsty/mc` (fork comunitário). O repositório `minio/minio` saiu do Docker Hub e faz o pull falhar com *access denied*.
+- **Domínio:** vinculado ao serviço `app` na porta interna `8080` com HTTPS pelo Coolify. Antes de adicionar o domínio, crie o registro DNS **A** apontando para o IP do servidor. Defina `APP_BASE_URL` com a URL pública para referência.
+- **Variáveis obrigatórias no Coolify:** `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `S3_BUCKET`, `S3_REGION`, `S3_USE_PATH_STYLE`, `APP_BASE_URL` e `DEFAULT_PAYMENT_LINK`.
 - **Volumes persistentes:** `gerador_contrato_data:/app/data` (SQLite WAL) e `gerador_contrato_minio_data:/data` (PDFs no MinIO).
 - **Secrets no GitHub Actions:** `COOLIFY_DEPLOY_WEBHOOK` e `COOLIFY_DEPLOY_TOKEN`.
 
