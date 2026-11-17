@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -44,7 +45,7 @@ func setupTestRouter(t *testing.T, withPDF bool) (http.Handler, func()) {
 
 	var pdfSvc *service.PDFService
 	if withPDF {
-		pdfSvc = service.NewPDFService(1, "")
+		pdfSvc = service.NewPDFService(1, os.Getenv("CHROME_PATH"))
 	}
 
 	// Mock BrasilAPI server

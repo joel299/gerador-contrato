@@ -16,7 +16,16 @@ RUN apk add --no-cache \
     ca-certificates \
     ttf-freefont \
     font-noto \
+    tzdata \
     wget
+
+# O nome do binario varia entre versoes do pacote chromium no Alpine.
+# Criamos um caminho estavel para CHROME_BIN/CHROME_PATH.
+RUN if [ -x /usr/bin/chromium-browser ]; then \
+      ln -sf /usr/bin/chromium-browser /usr/local/bin/chrome; \
+    else \
+      ln -sf /usr/bin/chromium /usr/local/bin/chrome; \
+    fi && test -x /usr/local/bin/chrome
 
 RUN addgroup -S app && adduser -S -G app app
 WORKDIR /app
@@ -26,9 +35,10 @@ RUN mkdir -p /app/data/pdfs && chown -R app:app /app
 ENV PORT=8080 \
     DB_PATH=/app/data/contracts.db \
     LOCAL_PDF_DIR=/app/data/pdfs \
-    CHROME_BIN=/usr/bin/chromium-browser \
-    CHROME_PATH=/usr/bin/chromium-browser \
-    CHROMEDP_NO_SANDBOX=true
+    CHROME_BIN=/usr/local/bin/chrome \
+    CHROME_PATH=/usr/local/bin/chrome \
+    CHROMEDP_NO_SANDBOX=true \
+    TZ=America/Campo_Grande
 
 USER app
 EXPOSE 8080

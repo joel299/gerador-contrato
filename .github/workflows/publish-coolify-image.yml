@@ -10,6 +10,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: publish-coolify-image-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-and-build-image:
     runs-on: ubuntu-latest
@@ -22,7 +26,16 @@ jobs:
         with:
           go-version-file: go.mod
 
+      # O teste de integracao gera PDF real via chromedp (headless). O runner nao
+      # traz Chromium por padrao, por isso instalamos o Chrome for Testing e
+      # exportamos o caminho via CHROME_PATH para o teste.
+      - name: Setup Chrome for PDF integration test
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
+
       - name: Run go vet and tests
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: |
           go vet ./...
           go test ./...
@@ -46,6 +59,9 @@ jobs:
           tags: |
             ghcr.io/joel299/gerador-contrato:coolify
             ghcr.io/joel299/gerador-contrato:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -58,9 +74,21 @@ jobs:
           COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
         run: |
-          if [ -n "$COOLIFY_WEBHOOK" ]; then
-            curl -fsS -X POST "$COOLIFY_WEBHOOK" \
-              -H "Authorization: Bearer $COOLIFY_TOKEN" >/dev/null
+          if [ -z "$COOLIFY_WEBHOOK" ]; then
+            echo "::error::COOLIFY_DEPLOY_WEBHOOK nao configurado nos secrets do repositorio. Deploy no Coolify nao disparado."
+            exit 1
+          fi
+
+          auth_args=()
+          if [ -n "$COOLIFY_TOKEN" ]; then
+            auth_args=(-H "Authorization: Bearer $COOLIFY_TOKEN")
           else
-            echo "COOLIFY_DEPLOY_WEBHOOK not configured; skipping webhook trigger."
+            echo "::warning::COOLIFY_DEPLOY_TOKEN nao configurado; chamando o webhook sem header Authorization."
+          fi
+
+          status=$(curl -sS -o /tmp/coolify-response.txt -w "%{http_code}" -X POST "$COOLIFY_WEBHOOK" "${auth_args[@]}")
+          echo "Coolify webhook HTTP status: $status"
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::Webhook do Coolify respondeu HTTP $status."
+            exit 1
           fi
