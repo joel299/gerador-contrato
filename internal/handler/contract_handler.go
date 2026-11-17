@@ -263,13 +263,8 @@ func (h *ContractHandler) DownloadPDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.storage.ProviderName() == "s3" {
-		if url, err := h.storage.PresignedURL(r.Context(), c.S3Key, 15*time.Minute); err == nil && url != "" {
-			http.Redirect(w, r, url, http.StatusFound)
-			return
-		}
-	}
-
+	// O PDF é servido pelo próprio app: em MinIO interno, a URL pré-assinada usa
+	// o host `http://minio:9000`, que o navegador do cliente não resolve.
 	data, err := h.storage.ReadPDF(r.Context(), c.S3Key)
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "arquivo PDF não encontrado no armazenamento"})
