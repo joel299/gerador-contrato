@@ -1,0 +1,184 @@
+openapi: 3.1.0
+info:
+  title: IA Infinito — API Gerador de Contratos
+  version: 1.0.0
+  description: |
+    API REST oficial do **Gerador de Contratos IA Infinito** (Go + SQLite WAL + S3 + chromedp).
+    Permite consultar dados cadastrais via BrasilAPI, pré-visualizar contratos em HTML A4,
+    persistir/buscar histórico no SQLite e gerar PDFs prontos para assinatura digital.
+servers:
+  - url: http://localhost:8080
+    description: Servidor Local
+paths:
+  /health:
+    get:
+      summary: Healthcheck do sistema
+      description: Verifica disponibilidade do SQLite, provedor de armazenamento (S3 ou local) e pool Chromium.
+      responses:
+        "200":
+          description: Sistema operacional
+  /api/cnpj/{cnpj}:
+    get:
+      summary: Consultar CNPJ (BrasilAPI + Cache)
+      parameters:
+        - name: cnpj
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "11222333000181"
+      responses:
+        "200":
+          description: Dados normalizados da empresa
+        "400":
+          description: CNPJ inválido
+        "404":
+          description: CNPJ não encontrado
+        "503":
+          description: BrasilAPI indisponível (preenchimento manual liberado)
+  /api/contracts/preview:
+    post:
+      summary: Gerar HTML do Live Preview A4
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContractInput"
+      responses:
+        "200":
+          description: HTML compilado do contrato oficial IA Infinito
+  /api/contracts:
+    get:
+      summary: Listar e buscar contratos salvos
+      parameters:
+        - name: q
+          in: query
+          description: Filtro por Razão Social, Nome Fantasia, CNPJ ou Código
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [DRAFT, GENERATED, SENT_SIGNATURE, SIGNED, CANCELED]
+      responses:
+        "200":
+          description: Lista de contratos
+    post:
+      summary: Salvar contrato (rascunho ou gerar PDF)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContractInput"
+      responses:
+        "201":
+          description: Contrato criado
+  /api/contracts/{id}:
+    get:
+      summary: Obter detalhes de um contrato
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Contrato encontrado
+        "404":
+          description: Não encontrado
+    put:
+      summary: Atualizar contrato existente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContractInput"
+      responses:
+        "200":
+          description: Contrato atualizado
+  /api/contracts/{id}/pdf:
+    post:
+      summary: Gerar PDF A4 e armazenar (S3 ou fallback local)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Metadados do PDF gerado e URL de download
+    get:
+      summary: Baixar PDF gerado (stream ou Presigned URL S3)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Arquivo application/pdf
+components:
+  schemas:
+    ContractInput:
+      type: object
+      required:
+        - client_company_name
+        - client_cnpj
+        - client_address
+        - client_rep_name
+        - client_rep_document
+        - client_email
+        - client_phone
+      properties:
+        client_company_name:
+          type: string
+          example: "Exemplo Comercial Ltda"
+        client_trade_name:
+          type: string
+          example: "Exemplo"
+        client_cnpj:
+          type: string
+          example: "11.222.333/0001-81"
+        client_address:
+          type: string
+          example: "Av. Afonso Pena, 1500, Centro, Campo Grande/MS, CEP 79002-074"
+        client_rep_name:
+          type: string
+          example: "Maria Souza"
+        client_rep_document:
+          type: string
+          example: "529.982.247-25"
+        client_email:
+          type: string
+          example: "maria@exemplo.com.br"
+        client_phone:
+          type: string
+          example: "(67) 99999-8888"
+        setup_fee_cents:
+          type: integer
+          example: 150000
+        monthly_fee_cents:
+          type: integer
+          example: 250000
+        due_day:
+          type: integer
+          example: 10
+        start_date:
+          type: string
+          example: "2026-11-17"
+        city_forum:
+          type: string
+          example: "Campo Grande/MS"

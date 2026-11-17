@@ -1,0 +1,1590 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0d1114">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <title>IA Infinito — Gerador de Contratos</title>
+  <style>
+    /* ==========================================================================
+       1. TOKENS OFICIAIS IA INFINITO (SYSTEM_DESIGN.md)
+       ========================================================================== */
+    :root {
+      color-scheme: dark;
+      --bg-canvas: #0d1114;
+      --bg-subtle: #13191e;
+
+      --glass-shell-bg: rgba(20, 27, 33, 0.62);
+      --glass-plate-bg: rgba(22, 29, 36, 0.92);
+      --surface-solid-shell: #141b21;
+      --surface-solid-plate: #182027;
+      --surface-input: #10161b;
+      --surface-input-disabled: #141a20;
+
+      --glass-border-outer: rgba(255, 255, 255, 0.11);
+      --glass-highlight-top: rgba(255, 255, 255, 0.16);
+      --glass-inner-stroke: rgba(255, 255, 255, 0.05);
+      --border-subtle: #26313b;
+      --border-control: #32404d;
+
+      --accent-primary: #22c58b;
+      --accent-primary-hover: #1eb07c;
+      --accent-primary-fg: #071912;
+      --accent-secondary: #1ea7e1;
+      --accent-gold: #e2c987;
+
+      --text-primary: #f0f4f8;
+      --text-secondary: #c2cdd6;
+      --text-muted: #8b99a6;
+      --text-disabled: #586673;
+
+      --state-focus-ring: rgba(30, 167, 225, 0.35);
+      --state-focus-border: #1ea7e1;
+      --state-error-bg: rgba(239, 68, 68, 0.10);
+      --state-error-border: #ef4444;
+      --state-error-text: #fca5a5;
+
+      --skeleton-base: #1d262f;
+      --skeleton-highlight: #283440;
+
+      --radius-shell: 20px;
+      --radius-plate: 14px;
+      --radius-control: 10px;
+      --glass-blur: 16px;
+      --shadow-shell: 0 18px 44px -10px rgba(0, 0, 0, 0.45);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    html[data-theme="light"] {
+      color-scheme: light;
+      --bg-canvas: #f2f5f7;
+      --bg-subtle: #e7edf1;
+
+      --glass-shell-bg: rgba(255, 255, 255, 0.66);
+      --glass-plate-bg: rgba(255, 255, 255, 0.94);
+      --surface-solid-shell: #eef2f5;
+      --surface-solid-plate: #ffffff;
+      --surface-input: #f8fafb;
+      --surface-input-disabled: #edf1f4;
+
+      --glass-border-outer: rgba(15, 23, 30, 0.10);
+      --glass-highlight-top: rgba(255, 255, 255, 0.85);
+      --glass-inner-stroke: rgba(15, 23, 30, 0.04);
+      --border-subtle: #dce4eb;
+      --border-control: #c5d1dc;
+
+      --accent-primary: #147a55;
+      --accent-primary-hover: #106345;
+      --accent-primary-fg: #ffffff;
+      --accent-secondary: #0b7eb0;
+      --accent-gold: #8c6a24;
+
+      --text-primary: #131d24;
+      --text-secondary: #364550;
+      --text-muted: #5d6d7a;
+      --text-disabled: #96a3ae;
+
+      --state-focus-ring: rgba(11, 126, 176, 0.25);
+      --state-focus-border: #0b7eb0;
+      --state-error-bg: rgba(220, 38, 38, 0.07);
+      --state-error-border: #dc2626;
+      --state-error-text: #b91c1c;
+
+      --skeleton-base: #e4ebf0;
+      --skeleton-highlight: #f1f5f8;
+
+      --shadow-shell: 0 16px 38px -10px rgba(19, 29, 36, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      line-height: 1.45;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==========================================================================
+       2. LIQUID GLASS ESTABILIZADO (3 CAMADAS) + FALLBACK SÓLIDO (SUP-008)
+       ========================================================================== */
+    .glass-shell {
+      padding: 6px;
+      border-radius: var(--radius-shell);
+      background: var(--glass-shell-bg);
+      border: 1px solid var(--glass-border-outer);
+      box-shadow:
+        inset 0 1px 0 0 var(--glass-highlight-top),
+        inset 0 0 0 1px var(--glass-inner-stroke),
+        var(--shadow-shell);
+      backdrop-filter: blur(var(--glass-blur)) saturate(130%);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(130%);
+    }
+    .glass-plate {
+      background: var(--glass-plate-bg);
+      border-radius: var(--radius-plate);
+      border: 1px solid var(--border-subtle);
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .glass-shell, .topbar, .mobile-tabs { background: var(--surface-solid-shell) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+      .glass-plate { background: var(--surface-solid-plate) !important; }
+    }
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .glass-shell, .topbar, .mobile-tabs { background: var(--surface-solid-shell); }
+      .glass-plate { background: var(--surface-solid-plate); }
+    }
+
+    /* ==========================================================================
+       3. TOP BAR (60px) & MOBILE TABS
+       ========================================================================== */
+    .topbar {
+      height: 60px;
+      flex-shrink: 0;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--glass-shell-bg);
+      border-bottom: 1px solid var(--border-subtle);
+      backdrop-filter: blur(var(--glass-blur)) saturate(130%);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(130%);
+      z-index: 20;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+    }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: #0d1114;
+      border: 1px solid var(--border-control);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .brand-title {
+      font-size: 0.94rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .brand-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .mobile-tabs {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 8px 12px;
+      background: var(--glass-shell-bg);
+      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+      z-index: 19;
+    }
+    .mobile-tab {
+      height: 38px;
+      border-radius: var(--radius-control);
+      border: 1px solid var(--border-control);
+      background: var(--surface-input);
+      color: var(--text-secondary);
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .mobile-tab[aria-selected="true"] {
+      background: var(--accent-secondary);
+      border-color: var(--accent-secondary);
+      color: #ffffff;
+    }
+
+    /* ==========================================================================
+       4. WORKSPACE SPLIT-SCREEN (440px + 1fr)
+       ========================================================================== */
+    .workspace {
+      flex: 1;
+      height: calc(100vh - 60px);
+      display: grid;
+      grid-template-columns: 440px minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .editor-pane {
+      background: var(--surface-solid-plate);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    .editor-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 20px 24px;
+    }
+    .editor-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--surface-solid-plate);
+      display: grid;
+      gap: 8px;
+    }
+    .footer-secondary-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .form-section {
+      padding: 18px 0;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .form-section:first-child { border-top: 0; padding-top: 2px; }
+    .form-section-title {
+      margin: 0 0 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-secondary);
+    }
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .microcopy {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+    .input-row { display: flex; gap: 8px; }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent-primary);
+      cursor: pointer;
+    }
+
+    /* Controles e Estados (REF-002) */
+    .control {
+      width: 100%;
+      height: 40px;
+      padding: 0 12px;
+      border-radius: var(--radius-control);
+      border: 1px solid var(--border-control);
+      background: var(--surface-input);
+      color: var(--text-primary);
+      font: inherit;
+      font-size: 0.88rem;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .control::placeholder { color: var(--text-muted); }
+    .control:focus-visible, .btn:focus-visible {
+      outline: none;
+      border-color: var(--state-focus-border);
+      box-shadow: 0 0 0 3px var(--state-focus-ring);
+    }
+    .control:disabled {
+      background: var(--surface-input-disabled);
+      color: var(--text-disabled);
+      border-style: dashed;
+      cursor: not-allowed;
+    }
+    .control[aria-invalid="true"] {
+      border-color: var(--state-error-border);
+      background: var(--state-error-bg);
+    }
+    .error-msg {
+      font-size: 0.75rem;
+      color: var(--state-error-text);
+      font-weight: 500;
+      margin: 0;
+    }
+    .banner-feedback {
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-control);
+      border: 1px solid var(--border-control);
+      background: var(--surface-input);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      display: none;
+    }
+    .banner-feedback.error {
+      display: block;
+      border-color: var(--state-error-border);
+      background: var(--state-error-bg);
+      color: var(--state-error-text);
+    }
+    .banner-feedback.info {
+      display: block;
+      border-color: var(--accent-secondary);
+      color: var(--text-primary);
+    }
+    .banner-feedback.success {
+      display: block;
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+
+    /* Botões Estruturais (border-radius: 10px, sem pill buttons) */
+    .btn {
+      height: 40px;
+      padding: 0 14px;
+      border-radius: var(--radius-control);
+      border: 1px solid var(--border-control);
+      background: var(--surface-input);
+      color: var(--text-primary);
+      font: inherit;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      white-space: nowrap;
+      text-decoration: none;
+      transition: transform 0.1s ease, background-color 0.15s ease, border-color 0.15s ease;
+    }
+    .btn:hover:not(:disabled) { border-color: var(--accent-secondary); }
+    .btn:active:not(:disabled) { transform: translateY(1px); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-sm { height: 34px; padding: 0 11px; font-size: 0.8rem; }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: var(--accent-primary-fg);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-primary-hover);
+      border-color: var(--accent-primary-hover);
+    }
+
+    /* Tag de Status (único elemento com raio pílula permitido) */
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+      color: var(--accent-primary);
+      border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, transparent);
+    }
+    .status-tag.draft {
+      background: color-mix(in srgb, var(--accent-gold) 14%, transparent);
+      color: var(--accent-gold);
+      border-color: color-mix(in srgb, var(--accent-gold) 30%, transparent);
+    }
+
+    /* ==========================================================================
+       5. PALCO DE LIVE PREVIEW A4 (COLUNA DIREITA)
+       ========================================================================== */
+    .preview-pane {
+      background: var(--bg-canvas);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    .preview-toolbar {
+      height: 46px;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .zoom-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .preview-stage {
+      flex: 1;
+      overflow: auto;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .a4-wrapper {
+      transform-origin: top center;
+      transition: transform 0.15s ease;
+    }
+    .a4-sheet {
+      width: 210mm;
+      min-height: 297mm;
+      background: #ffffff;
+      color: #111827;
+      border-radius: 4px;
+      box-shadow: 0 20px 55px rgba(0, 0, 0, 0.42);
+      overflow: hidden;
+      padding: 16mm 15mm;
+    }
+    .a4-frame {
+      width: 100%;
+      min-height: 260mm;
+      border: 0;
+      display: block;
+    }
+
+    /* ==========================================================================
+       6. SKELETON LOADERS (ZERO CLS)
+       ========================================================================== */
+    @keyframes skeleton-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.6s ease-in-out infinite;
+      border-radius: 6px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .skeleton { animation: none; background: var(--skeleton-base); }
+    }
+    .skeleton-input { height: 40px; width: 100%; border-radius: var(--radius-control); }
+    .skeleton-row {
+      display: grid;
+      grid-template-columns: 2fr 1.2fr 1fr 110px;
+      gap: 12px;
+      align-items: center;
+      height: 48px;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .skeleton-line { height: 14px; }
+    .skeleton-btn { height: 32px; border-radius: 8px; }
+
+    .a4-skeleton {
+      display: grid;
+      gap: 16px;
+      padding: 4px;
+    }
+    .a4-skeleton .sk-light {
+      background: #e5ecf1;
+      border-radius: 6px;
+      height: 14px;
+    }
+
+    /* ==========================================================================
+       7. MODAL / GAVETA DE CONTRATOS SALVOS (SQLITE)
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 8, 11, 0.35);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 50;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-dialog {
+      width: min(920px, 100%);
+      max-height: 84vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-plate {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: 80vh;
+      overflow: hidden;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .modal-header h2 { margin: 0; font-size: 1.08rem; }
+    .table-scroll { overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-control); }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .data-table th {
+      text-align: left;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--surface-input);
+      position: sticky;
+      top: 0;
+    }
+    .data-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+    .data-table tr:last-child td { border-bottom: 0; }
+
+    /* ==========================================================================
+       8. RESPONSIVIDADE MOBILE / PWA (<= 900px)
+       ========================================================================== */
+    @media (max-width: 900px) {
+      .topbar { padding: 0 12px; }
+      .brand-sub, .hide-mobile { display: none; }
+      .mobile-tabs { display: grid; }
+      .workspace {
+        grid-template-columns: 1fr;
+        height: calc(100vh - 115px);
+        position: relative;
+      }
+      .editor-pane, .preview-pane {
+        position: absolute;
+        inset: 0;
+        border-right: 0;
+      }
+      .workspace[data-mobile-tab="form"] .preview-pane { display: none; }
+      .workspace[data-mobile-tab="preview"] .editor-pane { display: none; }
+      .editor-scroll { padding-bottom: 140px; }
+      .editor-footer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 25;
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+      }
+      .preview-stage { padding: 12px; }
+      .a4-sheet { width: 100%; min-height: auto; padding: 16px; }
+      .field-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z" stroke="#22c58b" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <p class="brand-title">IA Infinito — Contratos</p>
+        <p class="brand-sub" id="activeContractLabel">Novo contrato · Padrão oficial A4</p>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="btn btn-sm" id="newContractBtn" type="button">Novo</button>
+      <button class="btn btn-sm" id="openHistoryBtn" type="button">Salvos</button>
+      <button class="btn btn-sm" id="themeToggleBtn" type="button">Claro</button>
+    </div>
+  </header>
+
+  <!-- ABAS FIXAS NO MOBILE (<= 900px) -->
+  <nav class="mobile-tabs" role="tablist" aria-label="Alternar entre formulário e pré-visualização">
+    <button class="mobile-tab" id="tabFormBtn" role="tab" aria-selected="true" type="button">1. Preencher Dados</button>
+    <button class="mobile-tab" id="tabPreviewBtn" role="tab" aria-selected="false" type="button">2. Visualizar Contrato A4</button>
+  </nav>
+
+  <main class="workspace" id="workspace" data-mobile-tab="form">
+    <!-- COLUNA ESQUERDA: FORMULÁRIO PLANO ESTABILIZADO -->
+    <aside class="editor-pane" aria-label="Formulário do contrato">
+      <div class="editor-scroll">
+        <div id="formBanner" class="banner-feedback" role="status" aria-live="polite"></div>
+
+        <form id="contractForm" novalidate>
+          <!-- SEÇÃO 1: IDENTIFICAÇÃO DA CONTRATANTE -->
+          <section class="form-section">
+            <h2 class="form-section-title">1. Identificação da Contratante</h2>
+            <div class="field-grid">
+              <div class="field full">
+                <label for="client_cnpj">CNPJ</label>
+                <div class="input-row">
+                  <input class="control" id="client_cnpj" name="client_cnpj" type="text" placeholder="00.000.000/0000-00" maxlength="18" autocomplete="off" inputmode="numeric">
+                  <button class="btn" id="lookupCnpjBtn" type="button">Consultar CNPJ</button>
+                </div>
+                <p class="microcopy" id="cnpjMicrocopy">Preenche automaticamente os dados cadastrais da empresa. Edição manual sempre liberada.</p>
+                <p class="error-msg" id="err_client_cnpj" hidden></p>
+              </div>
+
+              <div class="field full">
+                <label for="client_company_name">Razão Social</label>
+                <div class="skeleton skeleton-input" id="sk_company" hidden></div>
+                <input class="control" id="client_company_name" name="client_company_name" type="text" placeholder="Ex.: Empresa Contratante Ltda">
+                <p class="error-msg" id="err_client_company_name" hidden></p>
+              </div>
+
+              <div class="field full">
+                <label for="client_address">Endereço Completo</label>
+                <div class="skeleton skeleton-input" id="sk_address" hidden></div>
+                <input class="control" id="client_address" name="client_address" type="text" placeholder="Rua, nº, bairro, cidade/UF, CEP">
+                <p class="error-msg" id="err_client_address" hidden></p>
+              </div>
+            </div>
+          </section>
+
+          <!-- SEÇÃO 2: RESPONSÁVEL LEGAL E CONTATO -->
+          <section class="form-section">
+            <h2 class="form-section-title">2. Responsável Legal e Contato</h2>
+            <div class="field-grid">
+              <div class="field full">
+                <label for="client_rep_name">Nome do Responsável Legal</label>
+                <div class="skeleton skeleton-input" id="sk_rep" hidden></div>
+                <input class="control" id="client_rep_name" name="client_rep_name" type="text" placeholder="Nome completo">
+                <p class="error-msg" id="err_client_rep_name" hidden></p>
+              </div>
+
+              <div class="field full">
+                <label class="toggle-row" for="toggleIncludeCpf">
+                  <input id="toggleIncludeCpf" type="checkbox">
+                  <span>Incluir CPF do representante legal</span>
+                </label>
+                <input class="control" id="client_rep_document" name="client_rep_document" type="text" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" disabled hidden>
+                <p class="microcopy">Opcional: quando desmarcado, nenhuma menção a CPF é exibida no contrato.</p>
+                <p class="error-msg" id="err_client_rep_document" hidden></p>
+              </div>
+
+              <div class="field">
+                <label for="client_phone">Telefone / WhatsApp</label>
+                <input class="control" id="client_phone" name="client_phone" type="text" placeholder="(00) 00000-0000" maxlength="15" inputmode="tel">
+                <p class="error-msg" id="err_client_phone" hidden></p>
+              </div>
+
+              <div class="field">
+                <label for="client_email">E-mail</label>
+                <input class="control" id="client_email" name="client_email" type="email" placeholder="contato@empresa.com.br">
+                <p class="error-msg" id="err_client_email" hidden></p>
+              </div>
+            </div>
+          </section>
+
+          <!-- SEÇÃO 3: CONDIÇÕES COMERCIAIS -->
+          <section class="form-section">
+            <h2 class="form-section-title">3. Condições Comerciais e Vigência</h2>
+            <div class="field-grid">
+              <div class="field">
+                <label for="setup_fee_display">Taxa de Implantação (R$)</label>
+                <input class="control" id="setup_fee_display" type="text" value="1.500,00" inputmode="numeric">
+              </div>
+
+              <div class="field">
+                <label for="setup_installments">Parcelamento da Implantação</label>
+                <select class="control" id="setup_installments" name="setup_installments">
+                  <option value="1|pix" selected>1x (À vista - PIX)</option>
+                  <option value="1|card">1x (Cartão de Crédito)</option>
+                  <option value="2|card">2x</option>
+                  <option value="3|card">3x</option>
+                  <option value="4|card">4x</option>
+                  <option value="5|card">5x</option>
+                  <option value="6|card">6x</option>
+                  <option value="7|card">7x</option>
+                  <option value="8|card">8x</option>
+                  <option value="9|card">9x</option>
+                  <option value="10|card">10x</option>
+                  <option value="11|card">11x</option>
+                  <option value="12|card">12x</option>
+                </select>
+              </div>
+
+              <div class="field full">
+                <p class="microcopy" id="setupExtensoText">Parcela única à vista de R$ 1.500,00 (mil e quinhentos reais)</p>
+              </div>
+
+              <div class="field full">
+                <label class="toggle-row" for="pay_on_signature">
+                  <input id="pay_on_signature" type="checkbox" checked>
+                  <span>Pagamento da 1ª parcela / entrada no ato da assinatura</span>
+                </label>
+                <p class="microcopy" id="payOnSigMicrocopy">1ª parcela paga na assinatura; demais parcelas vencem todo dia 10.</p>
+              </div>
+
+              <div class="field full">
+                <label for="payment_link">Link de Pagamento (opcional)</label>
+                <input class="control" id="payment_link" type="url" value="https://link.infinitepay.io/joel-quintana/VC1DLTAtUg-YfLpjLenlZ-1500,00" placeholder="https://...">
+                <p class="microcopy">Enviado na mensagem do WhatsApp quando o pagamento na assinatura estiver ativo.</p>
+              </div>
+
+              <div class="field full">
+                <label class="toggle-row" for="has_monthly_fee">
+                  <input id="has_monthly_fee" type="checkbox" checked>
+                  <span>Incluir mensalidade recorrente</span>
+                </label>
+                <input class="control" id="monthly_fee_display" type="text" value="2.500,00" inputmode="numeric">
+                <p class="microcopy" id="monthlyExtensoText">dois mil e quinhentos reais</p>
+              </div>
+
+              <div class="field">
+                <label for="due_day">Dia de Vencimento</label>
+                <input class="control" id="due_day" name="due_day" type="number" min="1" max="31" value="10" inputmode="numeric">
+              </div>
+
+              <div class="field">
+                <label for="start_date">Data de Assinatura</label>
+                <input class="control" id="start_date" name="start_date" type="date">
+              </div>
+
+              <div class="field full">
+                <label class="toggle-row" for="include_witnesses">
+                  <input id="include_witnesses" type="checkbox" checked>
+                  <span>Incluir campos de testemunhas no contrato</span>
+                </label>
+                <p class="microcopy">Desmarque para assinatura digital direta entre as partes, sem espaços vazios de testemunhas.</p>
+              </div>
+
+              <div class="field full">
+                <label for="city_forum">Cidade / Foro Eleito</label>
+                <input class="control" id="city_forum" name="city_forum" type="text" value="Campo Grande/MS">
+                <p class="microcopy">Cláusulas oficiais mantidas: link multicanal (WhatsApp, Facebook, Instagram, Google e TikTok) e tráfego pago com risco da CONTRATADA.</p>
+              </div>
+            </div>
+          </section>
+        </form>
+        <div style="padding-top: 8px; border-top: 1px solid var(--border-subtle); text-align: right;">
+          <a href="/docs" target="_blank" rel="noopener" style="font-size: 0.74rem; color: var(--text-muted); text-decoration: none;">Documentação de Integração</a>
+        </div>
+      </div>
+
+      <div class="editor-footer">
+        <button class="btn btn-primary" id="exportWhatsAppBtn" type="button">Exportar PDF e Enviar no WhatsApp</button>
+        <div class="footer-secondary-row">
+          <button class="btn btn-sm" id="saveDraftBtn" type="button">Salvar Rascunho</button>
+          <button class="btn btn-sm" id="downloadOnlyBtn" type="button">Apenas Baixar PDF</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- COLUNA DIREITA: LIVE PREVIEW A4 -->
+    <section class="preview-pane" aria-label="Pré-visualização do contrato A4">
+      <div class="preview-toolbar">
+        <span>Pré-visualização A4 em tempo real (idêntica ao PDF final)</span>
+        <div class="zoom-group hide-mobile">
+          <button class="btn btn-sm" type="button" data-zoom="0.72">72%</button>
+          <button class="btn btn-sm" type="button" data-zoom="0.88">88%</button>
+          <button class="btn btn-sm" type="button" data-zoom="1">100%</button>
+        </div>
+      </div>
+
+      <div class="preview-stage">
+        <div class="a4-wrapper" id="a4Wrapper">
+          <div class="a4-sheet">
+            <div class="a4-skeleton" id="previewSkeleton">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:14px; border-bottom:2px solid #e5ecf1;">
+                <div class="sk-light" style="width:180px; height:28px;"></div>
+                <div class="sk-light" style="width:140px; height:24px;"></div>
+              </div>
+              <div class="sk-light" style="width:45%; height:24px;"></div>
+              <div class="sk-light" style="width:85%; height:14px;"></div>
+              <div class="sk-light" style="width:100%; height:210px;"></div>
+              <div class="sk-light" style="width:100%; height:110px;"></div>
+              <div class="sk-light" style="width:92%; height:14px;"></div>
+              <div class="sk-light" style="width:96%; height:14px;"></div>
+            </div>
+            <iframe id="previewFrame" class="a4-frame" title="Pré-visualização A4 do Contrato IA Infinito" hidden></iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL DE CONTRATOS SALVOS (SQLITE) -->
+  <div class="modal-backdrop" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
+    <div class="glass-shell modal-dialog">
+      <div class="glass-plate modal-plate">
+        <div class="modal-header">
+          <div>
+            <h2 id="historyModalTitle">Contratos Salvos</h2>
+            <p class="microcopy">Busque por Razão Social, CNPJ ou código do contrato para auditar, editar ou baixar o PDF.</p>
+          </div>
+          <button class="btn btn-sm" id="closeHistoryBtn" type="button">Fechar</button>
+        </div>
+
+        <div class="input-row">
+          <input class="control" id="historySearchInput" type="search" placeholder="Buscar por Razão Social, CNPJ ou código CTR-...">
+          <button class="btn" id="historySearchBtn" type="button">Buscar</button>
+        </div>
+
+        <div class="table-scroll" id="historyTableWrap">
+          <div id="historySkeleton" hidden>
+            <div class="skeleton-row"><div class="skeleton skeleton-line" style="width:70%"></div><div class="skeleton skeleton-line" style="width:80%"></div><div class="skeleton skeleton-line" style="width:60%"></div><div class="skeleton skeleton-btn"></div></div>
+            <div class="skeleton-row"><div class="skeleton skeleton-line" style="width:62%"></div><div class="skeleton skeleton-line" style="width:80%"></div><div class="skeleton skeleton-line" style="width:55%"></div><div class="skeleton skeleton-btn"></div></div>
+            <div class="skeleton-row"><div class="skeleton skeleton-line" style="width:78%"></div><div class="skeleton skeleton-line" style="width:80%"></div><div class="skeleton skeleton-line" style="width:65%"></div><div class="skeleton skeleton-btn"></div></div>
+            <div class="skeleton-row"><div class="skeleton skeleton-line" style="width:68%"></div><div class="skeleton skeleton-line" style="width:80%"></div><div class="skeleton skeleton-line" style="width:58%"></div><div class="skeleton skeleton-btn"></div></div>
+            <div class="skeleton-row" style="border-bottom:0"><div class="skeleton skeleton-line" style="width:74%"></div><div class="skeleton skeleton-line" style="width:80%"></div><div class="skeleton skeleton-line" style="width:62%"></div><div class="skeleton skeleton-btn"></div></div>
+          </div>
+
+          <table class="data-table" id="historyTable">
+            <thead>
+              <tr>
+                <th>Empresa Contratante</th>
+                <th>CNPJ</th>
+                <th>Mensalidade</th>
+                <th>Status</th>
+                <th style="text-align:right;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="historyTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      // PWA Service Worker registration
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+
+      const root = document.documentElement;
+      const themeBtn = document.getElementById('themeToggleBtn');
+      const savedTheme = localStorage.getItem('ia-infinito-contracts-theme');
+      if (savedTheme === 'light' || savedTheme === 'dark') root.dataset.theme = savedTheme;
+      const syncThemeLabel = () => {
+        themeBtn.textContent = root.dataset.theme === 'dark' ? 'Claro' : 'Escuro';
+      };
+      syncThemeLabel();
+      themeBtn.addEventListener('click', () => {
+        root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('ia-infinito-contracts-theme', root.dataset.theme);
+        syncThemeLabel();
+      });
+
+      // Mobile Tabs (<= 900px)
+      const workspaceEl = document.getElementById('workspace');
+      const tabFormBtn = document.getElementById('tabFormBtn');
+      const tabPreviewBtn = document.getElementById('tabPreviewBtn');
+      const switchMobileTab = (tab) => {
+        workspaceEl.dataset.mobileTab = tab;
+        tabFormBtn.setAttribute('aria-selected', String(tab === 'form'));
+        tabPreviewBtn.setAttribute('aria-selected', String(tab === 'preview'));
+        if (tab === 'preview') refreshPreview();
+      };
+      tabFormBtn.addEventListener('click', () => switchMobileTab('form'));
+      tabPreviewBtn.addEventListener('click', () => switchMobileTab('preview'));
+
+      // State
+      let currentContractId = null;
+      let previewTimer = null;
+      const todayISO = new Date().toISOString().slice(0, 10);
+      document.getElementById('start_date').value = todayISO;
+
+      // Masks & Mathematical Validators (Módulo 11)
+      const onlyDigits = (v) => (v || '').replace(/\D+/g, '');
+      const maskCNPJ = (v) => {
+        const d = onlyDigits(v).slice(0, 14);
+        return d.replace(/^(\d{2})(\d)/, '$1.$2')
+                .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+                .replace(/\.(\d{3})(\d)/, '.$1/$2')
+                .replace(/(\d{4})(\d)/, '$1-$2');
+      };
+      const maskCPF = (v) => {
+        const d = onlyDigits(v).slice(0, 11);
+        return d.replace(/^(\d{3})(\d)/, '$1.$2')
+                .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+                .replace(/\.(\d{3})(\d{1,2})$/, '.$1-$2');
+      };
+      const isValidCPF = (raw) => {
+        const d = onlyDigits(raw);
+        if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+        const calcDigit = (slice, factor) => {
+          let sum = 0;
+          for (let i = 0; i < slice.length; i++) sum += parseInt(slice[i], 10) * (factor - i);
+          const rem = (sum * 10) % 11;
+          return rem === 10 ? 0 : rem;
+        };
+        return calcDigit(d.slice(0, 9), 10) === parseInt(d[9], 10) &&
+               calcDigit(d.slice(0, 10), 11) === parseInt(d[10], 10);
+      };
+      const maskPhone = (v) => {
+        const d = onlyDigits(v).slice(0, 11);
+        if (d.length <= 10) {
+          return d.replace(/^(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2');
+        }
+        return d.replace(/^(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2');
+      };
+      const parseCurrencyCents = (v) => {
+        const d = onlyDigits(v);
+        return d ? parseInt(d, 10) : 0;
+      };
+      const formatCurrencyDisplay = (cents) => {
+        return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+
+      function centsToExtenso(cents) {
+        if (!cents || cents <= 0) return 'zero reais';
+        const reais = Math.floor(cents / 100);
+        const centavos = cents % 100;
+        const u = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+        const dez = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+        const cen = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+        const three = (n) => {
+          if (n === 0) return '';
+          if (n === 100) return 'cem';
+          const out = [];
+          const c = Math.floor(n / 100), r = n % 100;
+          if (c > 0) out.push(cen[c]);
+          if (r > 0) {
+            if (r < 20) out.push(u[r]);
+            else {
+              const d = Math.floor(r / 10), un = r % 10;
+              out.push(un > 0 ? `${dez[d]} e ${u[un]}` : dez[d]);
+            }
+          }
+          return out.join(' e ');
+        };
+        const toWords = (n) => {
+          if (n === 0) return 'zero';
+          const parts = [];
+          const milhoes = Math.floor(n / 1000000);
+          const milhares = Math.floor((n % 1000000) / 1000);
+          const resto = n % 1000;
+          if (milhoes > 0) parts.push(milhoes === 1 ? 'um milhão' : `${three(milhoes)} milhões`);
+          if (milhares > 0) parts.push(milhares === 1 ? 'mil' : `${three(milhares)} mil`);
+          if (resto > 0) parts.push(three(resto));
+          if (parts.length === 1) return parts[0];
+          const last = parts.pop();
+          return `${parts.join(', ')} e ${last}`;
+        };
+        const res = [];
+        if (reais > 0) res.push(`${toWords(reais)} ${reais === 1 ? 'real' : 'reais'}`);
+        if (centavos > 0) res.push(`${toWords(centavos)} ${centavos === 1 ? 'centavo' : 'centavos'}`);
+        return res.join(' e ');
+      }
+
+      const cnpjEl = document.getElementById('client_cnpj');
+      const cpfToggleEl = document.getElementById('toggleIncludeCpf');
+      const cpfEl = document.getElementById('client_rep_document');
+      const phoneEl = document.getElementById('client_phone');
+      const setupEl = document.getElementById('setup_fee_display');
+      const setupInstallmentsEl = document.getElementById('setup_installments');
+      const payOnSigEl = document.getElementById('pay_on_signature');
+      const paymentLinkEl = document.getElementById('payment_link');
+      const hasMonthlyEl = document.getElementById('has_monthly_fee');
+      const monthlyEl = document.getElementById('monthly_fee_display');
+      const dueDayEl = document.getElementById('due_day');
+      const includeWitnessesEl = document.getElementById('include_witnesses');
+
+      const DEFAULT_PAY_LINK_PREFIX = 'https://link.infinitepay.io/joel-quintana/VC1DLTAtUg-YfLpjLenlZ-';
+
+      const INSTALLMENT_RATES = {
+        1: 0.0599,
+        2: 0.1139,
+        3: 0.1249,
+        4: 0.1309,
+        5: 0.1379,
+        6: 0.1449,
+        7: 0.1549,
+        8: 0.1609,
+        9: 0.1669,
+        10: 0.1739,
+        11: 0.1839,
+        12: 0.1879
+      };
+
+      const parseInstallmentOption = () => {
+        const raw = setupInstallmentsEl.value || '1|pix';
+        const [nStr, method] = raw.split('|');
+        const n = Math.max(1, Math.min(12, parseInt(nStr || '1', 10)));
+        return { n, method: method || (n >= 2 ? 'card' : 'pix') };
+      };
+
+      const calculateSetupInstallments = (baseCents, installments, paymentMethod) => {
+        if (!baseCents || baseCents <= 0) return { totalFinalCents: 0, installmentCents: 0 };
+        const n = Math.max(1, Math.min(12, parseInt(installments || '1', 10)));
+        const rate = (n >= 2 || paymentMethod === 'card') ? (INSTALLMENT_RATES[n] || 0) : 0;
+        const totalCents = Math.round(baseCents / (1 - rate));
+        const installmentCents = Math.round(totalCents / n);
+        const totalFinalCents = installmentCents * n;
+        return { totalFinalCents, installmentCents };
+      };
+
+      const syncPaymentLinkSuffix = (totalFinalCents) => {
+        const cur = (paymentLinkEl.value || '').trim();
+        if (cur.startsWith(DEFAULT_PAY_LINK_PREFIX)) {
+          const suffix = (totalFinalCents / 100).toFixed(2).replace('.', ',');
+          paymentLinkEl.value = DEFAULT_PAY_LINK_PREFIX + suffix;
+        }
+      };
+
+      const syncCommercialMicrocopy = () => {
+        const setupBaseCents = parseCurrencyCents(setupEl.value);
+        const { n, method } = parseInstallmentOption();
+        const { totalFinalCents, installmentCents } = calculateSetupInstallments(setupBaseCents, n, method);
+        syncPaymentLinkSuffix(totalFinalCents);
+
+        const setupTextEl = document.getElementById('setupExtensoText');
+        if (n === 1) {
+          setupTextEl.textContent = `Parcela única à vista de R$ ${formatCurrencyDisplay(totalFinalCents)} (${centsToExtenso(totalFinalCents)})`;
+        } else {
+          setupTextEl.textContent = `${n}x de R$ ${formatCurrencyDisplay(installmentCents)} (Total: R$ ${formatCurrencyDisplay(totalFinalCents)})`;
+        }
+
+        const dueDay = parseInt(dueDayEl.value || '10', 10);
+        const paySigTextEl = document.getElementById('payOnSigMicrocopy');
+        if (payOnSigEl.checked) {
+          paySigTextEl.textContent = `1ª parcela paga na assinatura; demais parcelas vencem todo dia ${dueDay}.`;
+        } else {
+          paySigTextEl.textContent = `Todas as cobranças vencem todo dia ${dueDay} de cada mês.`;
+        }
+
+        const monthlyCents = parseCurrencyCents(monthlyEl.value);
+        monthlyEl.disabled = !hasMonthlyEl.checked;
+        const monthlyTextEl = document.getElementById('monthlyExtensoText');
+        if (!hasMonthlyEl.checked || monthlyCents === 0) {
+          monthlyTextEl.textContent = 'Contrato sem cobrança de mensalidade recorrente';
+        } else {
+          monthlyTextEl.textContent = centsToExtenso(monthlyCents);
+        }
+      };
+
+      const syncMoney = (el) => {
+        const cents = parseCurrencyCents(el.value);
+        el.value = formatCurrencyDisplay(cents);
+        syncCommercialMicrocopy();
+        schedulePreview();
+      };
+      setupEl.addEventListener('input', () => syncMoney(setupEl));
+      monthlyEl.addEventListener('input', () => syncMoney(monthlyEl));
+      setupInstallmentsEl.addEventListener('change', () => { syncCommercialMicrocopy(); schedulePreview(); });
+      payOnSigEl.addEventListener('change', () => { syncCommercialMicrocopy(); schedulePreview(); });
+      hasMonthlyEl.addEventListener('change', () => { syncCommercialMicrocopy(); schedulePreview(); });
+      dueDayEl.addEventListener('input', () => { syncCommercialMicrocopy(); schedulePreview(); });
+      includeWitnessesEl.addEventListener('change', () => { schedulePreview(); });
+      syncCommercialMicrocopy();
+
+      const syncCpfToggle = (checked) => {
+        cpfToggleEl.checked = checked;
+        cpfEl.hidden = !checked;
+        cpfEl.disabled = !checked;
+        if (!checked) {
+          cpfEl.value = '';
+          setFieldError('client_rep_document', '');
+        }
+      };
+
+      cpfToggleEl.addEventListener('change', () => {
+        syncCpfToggle(cpfToggleEl.checked);
+        schedulePreview();
+      });
+
+      cnpjEl.addEventListener('input', () => { cnpjEl.value = maskCNPJ(cnpjEl.value); schedulePreview(); });
+      cpfEl.addEventListener('input', () => {
+        cpfEl.value = maskCPF(cpfEl.value);
+        const d = onlyDigits(cpfEl.value);
+        if (d.length === 11 && !isValidCPF(d)) {
+          setFieldError('client_rep_document', 'CPF inválido (falha na validação Módulo 11).');
+        } else {
+          setFieldError('client_rep_document', '');
+        }
+        schedulePreview();
+      });
+      phoneEl.addEventListener('input', () => { phoneEl.value = maskPhone(phoneEl.value); schedulePreview(); });
+
+      document.getElementById('contractForm').addEventListener('input', (e) => {
+        if (!['client_cnpj', 'client_rep_document', 'client_phone', 'setup_fee_display', 'monthly_fee_display', 'toggleIncludeCpf', 'due_day'].includes(e.target.id)) {
+          schedulePreview();
+        }
+      });
+
+      function collectPayload() {
+        const hasMonthly = hasMonthlyEl.checked;
+        const { n, method } = parseInstallmentOption();
+        return {
+          client_company_name: document.getElementById('client_company_name').value.trim(),
+          client_cnpj: onlyDigits(cnpjEl.value),
+          client_address: document.getElementById('client_address').value.trim(),
+          client_rep_name: document.getElementById('client_rep_name').value.trim(),
+          client_rep_document: cpfToggleEl.checked ? cpfEl.value.trim() : '',
+          client_phone: phoneEl.value.trim(),
+          client_email: document.getElementById('client_email').value.trim(),
+          setup_fee_cents: parseCurrencyCents(setupEl.value),
+          setup_installments: n,
+          setup_payment_method: method,
+          has_monthly_fee: hasMonthly,
+          monthly_fee_cents: hasMonthly ? parseCurrencyCents(monthlyEl.value) : 0,
+          pay_on_signature: payOnSigEl.checked,
+          include_witnesses: includeWitnessesEl.checked,
+          due_day: parseInt(dueDayEl.value || '10', 10),
+          start_date: document.getElementById('start_date').value || todayISO,
+          city_forum: document.getElementById('city_forum').value.trim() || 'Campo Grande/MS'
+        };
+      }
+
+      function showBanner(type, text) {
+        const b = document.getElementById('formBanner');
+        b.className = `banner-feedback ${type}`;
+        b.textContent = text;
+      }
+      function clearBanner() {
+        const b = document.getElementById('formBanner');
+        b.className = 'banner-feedback';
+        b.textContent = '';
+      }
+
+      function setFieldError(id, msg) {
+        const input = document.getElementById(id);
+        const err = document.getElementById(`err_${id}`);
+        if (input) input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+        if (err) {
+          err.textContent = msg || '';
+          err.hidden = !msg;
+        }
+      }
+      function clearAllErrors() {
+        ['client_cnpj', 'client_company_name', 'client_address', 'client_rep_name', 'client_rep_document', 'client_phone', 'client_email']
+          .forEach(id => setFieldError(id, ''));
+      }
+
+      // Live Preview A4 (BUG-001 fix: skeleton é explicitamente ocultado no onload)
+      const previewFrame = document.getElementById('previewFrame');
+      const previewSkeleton = document.getElementById('previewSkeleton');
+
+      function hidePreviewSkeleton() {
+        previewSkeleton.hidden = true;
+        previewSkeleton.style.display = 'none';
+        previewFrame.hidden = false;
+        previewFrame.style.display = 'block';
+      }
+
+      function showPreviewSkeleton() {
+        previewSkeleton.hidden = false;
+        previewSkeleton.style.display = 'grid';
+        previewFrame.hidden = true;
+        previewFrame.style.display = 'none';
+      }
+
+      async function refreshPreview() {
+        try {
+          const res = await fetch('/api/contracts/preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(collectPayload())
+          });
+          if (!res.ok) return;
+          const html = await res.text();
+          previewFrame.onload = () => {
+            try {
+              const h = previewFrame.contentDocument.documentElement.scrollHeight;
+              if (h > 300) previewFrame.style.height = `${h + 24}px`;
+            } catch (_) {}
+            hidePreviewSkeleton();
+          };
+          previewFrame.srcdoc = html;
+        } catch (err) {
+          console.error('Preview error:', err);
+        }
+      }
+
+      function schedulePreview() {
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(refreshPreview, 250);
+      }
+
+      const a4Wrapper = document.getElementById('a4Wrapper');
+      document.querySelectorAll('[data-zoom]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          a4Wrapper.style.transform = `scale(${btn.dataset.zoom})`;
+        });
+      });
+
+      // BrasilAPI CNPJ Lookup with Skeleton Loaders
+      function setCompanySkeleton(loading) {
+        [
+          ['sk_company', 'client_company_name'],
+          ['sk_address', 'client_address'],
+          ['sk_rep', 'client_rep_name']
+        ].forEach(([skId, inpId]) => {
+          document.getElementById(skId).hidden = !loading;
+          document.getElementById(inpId).hidden = loading;
+        });
+      }
+
+      document.getElementById('lookupCnpjBtn').addEventListener('click', async () => {
+        clearAllErrors();
+        clearBanner();
+        const digits = onlyDigits(cnpjEl.value);
+        if (digits.length !== 14) {
+          setFieldError('client_cnpj', 'Informe os 14 dígitos do CNPJ.');
+          return;
+        }
+        const btn = document.getElementById('lookupCnpjBtn');
+        btn.disabled = true;
+        btn.textContent = 'Consultando...';
+        setCompanySkeleton(true);
+
+        try {
+          const res = await fetch(`/api/cnpj/${digits}`);
+          const data = await res.json();
+          if (!res.ok) {
+            showBanner('error', data.error || 'Não foi possível consultar o CNPJ. Preencha os campos manualmente.');
+          } else {
+            if (data.company_name) document.getElementById('client_company_name').value = data.company_name;
+            if (data.address) document.getElementById('client_address').value = data.address;
+            if (data.legal_rep_name) document.getElementById('client_rep_name').value = data.legal_rep_name;
+            if (data.phone) phoneEl.value = maskPhone(data.phone);
+            if (data.email) document.getElementById('client_email').value = data.email;
+            showBanner('info', 'Dados cadastrais preenchidos automaticamente. Confira antes de gerar o PDF.');
+            refreshPreview();
+          }
+        } catch (_) {
+          showBanner('error', 'Não foi possível consultar o CNPJ no momento. Preencha os dados manualmente.');
+        } finally {
+          setCompanySkeleton(false);
+          btn.disabled = false;
+          btn.textContent = 'Consultar CNPJ';
+        }
+      });
+
+      // Persist Contract
+      async function persistContract(strict) {
+        clearAllErrors();
+        clearBanner();
+        const payload = collectPayload();
+
+        // Valida CPF matematicamente apenas se o usuário marcou incluir e preencheu algo
+        if (cpfToggleEl.checked && payload.client_rep_document !== '' && !isValidCPF(payload.client_rep_document)) {
+          setFieldError('client_rep_document', 'CPF inválido. Verifique os 11 dígitos (Módulo 11).');
+          return null;
+        }
+
+        if (strict) {
+          let valid = true;
+          if (onlyDigits(payload.client_cnpj).length !== 14) { setFieldError('client_cnpj', 'CNPJ obrigatório (14 dígitos).'); valid = false; }
+          if (!payload.client_company_name) { setFieldError('client_company_name', 'Razão Social obrigatória.'); valid = false; }
+          if (!payload.client_address) { setFieldError('client_address', 'Endereço completo obrigatório.'); valid = false; }
+          if (!payload.client_rep_name) { setFieldError('client_rep_name', 'Nome do representante obrigatório.'); valid = false; }
+          if (!payload.client_phone) { setFieldError('client_phone', 'Telefone / WhatsApp obrigatório.'); valid = false; }
+          if (!payload.client_email) { setFieldError('client_email', 'E-mail obrigatório.'); valid = false; }
+          if (!valid) return null;
+        }
+
+        const url = currentContractId ? `/api/contracts/${currentContractId}` : '/api/contracts';
+        const method = currentContractId ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showBanner('error', data.error || 'Erro ao salvar contrato.');
+          return null;
+        }
+        currentContractId = data.id;
+        document.getElementById('activeContractLabel').textContent = `${data.code} · ${data.client_company_name || 'Rascunho'}`;
+        return data;
+      }
+
+      function sanitizeFilename(name) {
+        const clean = (name || 'Empresa')
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-zA-Z0-9]+/g, '_')
+          .replace(/^_+|_+$/g, '');
+        return `Contrato_${clean || 'IA_Infinito'}.pdf`;
+      }
+
+      function normalizeWhatsAppBrazil(phoneRaw) {
+        let d = onlyDigits(phoneRaw);
+        if (!d) return '';
+        if ((d.length === 10 || d.length === 11) && !d.startsWith('55')) {
+          d = '55' + d;
+        }
+        return d;
+      }
+
+      function triggerBlobDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
+
+      async function generateAndFetchPDFBlob(contract) {
+        const pdfRes = await fetch(`/api/contracts/${contract.id}/pdf`, { method: 'POST' });
+        const pdfMeta = await pdfRes.json();
+        if (!pdfRes.ok) {
+          throw new Error(pdfMeta.error || 'Falha ao gerar PDF.');
+        }
+        const fileRes = await fetch(pdfMeta.download_url || `/api/contracts/${contract.id}/pdf`);
+        if (!fileRes.ok) {
+          throw new Error('Falha ao baixar o arquivo PDF gerado.');
+        }
+        const blob = await fileRes.blob();
+        const filename = sanitizeFilename(contract.client_company_name);
+        return { blob, filename, pdfMeta };
+      }
+
+      // Fluxo 1: Exportar PDF e Enviar no WhatsApp
+      document.getElementById('exportWhatsAppBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('exportWhatsAppBtn');
+        btn.disabled = true;
+        btn.textContent = 'Gerando PDF e preparando WhatsApp...';
+        try {
+          const saved = await persistContract(true);
+          if (!saved) return;
+
+          const { blob, filename, pdfMeta } = await generateAndFetchPDFBlob(saved);
+          const waDigits = normalizeWhatsAppBrazil(saved.client_phone);
+          const { n, method } = parseInstallmentOption();
+          const { totalFinalCents, installmentCents } = calculateSetupInstallments(saved.setup_fee_cents || 0, n, method);
+          const payLink = (paymentLinkEl.value || '').trim();
+          const repName = saved.client_rep_name || 'Cliente';
+
+          let msg = `Olá, ${repName}! Segue o Contrato de Prestação de Serviços da IA Infinito (${saved.code}) para assinatura digital.`;
+          if (payOnSigEl.checked && payLink !== '') {
+            const condLabel = n === 1
+              ? `à vista de R$ ${formatCurrencyDisplay(totalFinalCents)}`
+              : `${n}x de R$ ${formatCurrencyDisplay(installmentCents)}`;
+            msg = `Olá, ${repName}! Segue o Contrato de Prestação de Serviços da IA Infinito para assinatura digital.\n\nConforme combinado, segue também o link para pagamento da implantação (${condLabel}):\n${payLink}\n\nQualquer dúvida, estou à disposição!`;
+          }
+
+          const pdfFile = new File([blob], filename, { type: 'application/pdf' });
+          const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+          if (isMobile && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+            try {
+              await navigator.share({
+                files: [pdfFile],
+                title: `Contrato IA Infinito — ${saved.client_company_name}`,
+                text: msg
+              });
+              showBanner('success', `PDF ${filename} compartilhado (${pdfMeta.storage_provider}).`);
+              return;
+            } catch (shareErr) {
+              if (shareErr && shareErr.name === 'AbortError') {
+                showBanner('info', 'Compartilhamento cancelado. Baixando PDF...');
+              }
+            }
+          }
+
+          triggerBlobDownload(blob, filename);
+          if (waDigits) {
+            const waUrl = `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}`;
+            window.open(waUrl, '_blank', 'noopener');
+          }
+          showBanner('success', `PDF ${filename} baixado e WhatsApp aberto para envio!`);
+        } catch (err) {
+          showBanner('error', err.message || 'Erro inesperado ao exportar PDF.');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Exportar PDF e Enviar no WhatsApp';
+        }
+      });
+
+      // Fluxo 2: Apenas Baixar PDF
+      document.getElementById('downloadOnlyBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('downloadOnlyBtn');
+        btn.disabled = true;
+        btn.textContent = 'Gerando PDF...';
+        try {
+          const saved = await persistContract(true);
+          if (!saved) return;
+          const { blob, filename, pdfMeta } = await generateAndFetchPDFBlob(saved);
+          triggerBlobDownload(blob, filename);
+          showBanner('success', `PDF ${filename} salvo (${pdfMeta.storage_provider}) e baixado.`);
+        } catch (err) {
+          showBanner('error', err.message || 'Erro ao baixar PDF.');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Apenas Baixar PDF';
+        }
+      });
+
+      // Salvar Rascunho
+      document.getElementById('saveDraftBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('saveDraftBtn');
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+        try {
+          const saved = await persistContract(false);
+          if (saved) showBanner('success', `Rascunho ${saved.code} salvo com sucesso.`);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Salvar Rascunho';
+        }
+      });
+
+      // New Contract
+      document.getElementById('newContractBtn').addEventListener('click', () => {
+        currentContractId = null;
+        document.getElementById('contractForm').reset();
+        syncCpfToggle(false);
+        setupEl.value = '1.500,00';
+        setupInstallmentsEl.value = '1|pix';
+        payOnSigEl.checked = true;
+        paymentLinkEl.value = DEFAULT_PAY_LINK_PREFIX + '1500,00';
+        hasMonthlyEl.checked = true;
+        includeWitnessesEl.checked = true;
+        monthlyEl.value = '2.500,00';
+        dueDayEl.value = 10;
+        syncCommercialMicrocopy();
+        document.getElementById('start_date').value = todayISO;
+        document.getElementById('city_forum').value = 'Campo Grande/MS';
+        document.getElementById('activeContractLabel').textContent = 'Novo contrato · Padrão oficial A4';
+        clearAllErrors();
+        clearBanner();
+        refreshPreview();
+      });
+
+      // History Modal + Skeleton Loaders
+      const modal = document.getElementById('historyModal');
+      const historySkeleton = document.getElementById('historySkeleton');
+      const historyTable = document.getElementById('historyTable');
+      const historyTbody = document.getElementById('historyTbody');
+      const searchInput = document.getElementById('historySearchInput');
+
+      async function loadHistory(query = '') {
+        historySkeleton.hidden = false;
+        historyTable.hidden = true;
+        try {
+          const res = await fetch(`/api/contracts?q=${encodeURIComponent(query)}`);
+          const list = await res.json();
+          historyTbody.innerHTML = '';
+          if (!Array.isArray(list) || list.length === 0) {
+            historyTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:24px;">Nenhum contrato encontrado.</td></tr>';
+          } else {
+            list.forEach(c => {
+              const tr = document.createElement('tr');
+              const statusLabel = c.status === 'GENERATED' ? 'PDF Gerado' : 'Rascunho';
+              const statusClass = c.status === 'GENERATED' ? 'status-tag' : 'status-tag draft';
+              tr.innerHTML = `
+                <td><strong>${escapeHtml(c.client_company_name || '(Sem razão social)')}</strong><br><span class="microcopy">${escapeHtml(c.code)}</span></td>
+                <td>${escapeHtml(maskCNPJ(c.client_cnpj))}</td>
+                <td>R$ ${formatCurrencyDisplay(c.monthly_fee_cents || 0)}</td>
+                <td><span class="${statusClass}">${statusLabel}</span></td>
+                <td style="text-align:right; white-space:nowrap;">
+                  <button class="btn btn-sm" data-load="${c.id}" type="button">Carregar</button>
+                  ${c.status === 'GENERATED' ? `<a class="btn btn-sm" href="/api/contracts/${c.id}/pdf" target="_blank" rel="noopener">PDF</a>` : ''}
+                </td>
+              `;
+              historyTbody.appendChild(tr);
+            });
+          }
+        } catch (_) {
+          historyTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--state-error-text);">Erro ao carregar histórico.</td></tr>';
+        } finally {
+          historySkeleton.hidden = true;
+          historyTable.hidden = false;
+        }
+      }
+
+      historyTbody.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-load]');
+        if (!btn) return;
+        const id = btn.dataset.load;
+        showPreviewSkeleton();
+        const res = await fetch(`/api/contracts/${id}`);
+        if (!res.ok) return;
+        const c = await res.json();
+        currentContractId = c.id;
+        document.getElementById('client_cnpj').value = maskCNPJ(c.client_cnpj);
+        document.getElementById('client_company_name').value = c.client_company_name || '';
+        document.getElementById('client_address').value = c.client_address || '';
+        document.getElementById('client_rep_name').value = c.client_rep_name || '';
+
+        const hasCpf = Boolean(c.client_rep_document && c.client_rep_document.trim() !== '');
+        syncCpfToggle(hasCpf);
+        if (hasCpf) cpfEl.value = maskCPF(c.client_rep_document);
+
+        document.getElementById('client_phone').value = c.client_phone || '';
+        document.getElementById('client_email').value = c.client_email || '';
+        setupEl.value = formatCurrencyDisplay(c.setup_fee_cents || 0);
+        const loadedN = c.setup_installments || 1;
+        const loadedMethod = c.setup_payment_method || (loadedN >= 2 ? 'card' : 'pix');
+        setupInstallmentsEl.value = `${loadedN}|${loadedMethod}`;
+        payOnSigEl.checked = c.pay_on_signature !== false;
+        paymentLinkEl.value = DEFAULT_PAY_LINK_PREFIX + '1500,00';
+        hasMonthlyEl.checked = c.has_monthly_fee !== false;
+        includeWitnessesEl.checked = c.include_witnesses !== false;
+        monthlyEl.value = formatCurrencyDisplay(c.monthly_fee_cents || 0);
+        dueDayEl.value = c.due_day || 10;
+        syncCommercialMicrocopy();
+        document.getElementById('start_date').value = c.start_date || todayISO;
+        document.getElementById('city_forum').value = c.city_forum || 'Campo Grande/MS';
+        document.getElementById('activeContractLabel').textContent = `${c.code} · ${c.client_company_name}`;
+        modal.classList.remove('open');
+        clearAllErrors();
+        showBanner('info', `Contrato ${c.code} carregado para edição.`);
+        refreshPreview();
+      });
+
+      document.getElementById('openHistoryBtn').addEventListener('click', () => {
+        modal.classList.add('open');
+        loadHistory(searchInput.value);
+      });
+      document.getElementById('closeHistoryBtn').addEventListener('click', () => modal.classList.remove('open'));
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('open'); });
+      document.getElementById('historySearchBtn').addEventListener('click', () => loadHistory(searchInput.value));
+      searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); loadHistory(searchInput.value); } });
+
+      function escapeHtml(s) {
+        return String(s || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+      }
+
+      // Initial render
+      refreshPreview();
+    })();
+  </script>
+</body>
+</html>

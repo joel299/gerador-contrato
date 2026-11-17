@@ -1,0 +1,27 @@
+# Segredos e variáveis de ambiente
+.env
+.env.local
+.secrets/
+*.key
+*.pem
+
+# Bancos de dados locais e runtime
+data/
+/data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+
+# PDFs gerados em runtime (preserva apenas modelos oficiais)
+*.pdf
+!docs/**/*.pdf
+!Contrato de Prestação de Serviços - IA Infinito.pdf
+
+# Binários compilados e diretórios temporários
+server
+contrato-generator
+ia-infinito-contracts
+*.exe
+tmp/
+dist/

@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Acompanhamento visual do projeto Gerador de Contratos IA Infinito: decisões, etapa atual, progresso e validações.">
+  <title>IA Infinito — Acompanhamento do Gerador de Contratos</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d1114;
+      --bg-soft: #13191e;
+      --surface: rgba(24, 31, 37, .78);
+      --plate: #182026;
+      --text: #f0f4f8;
+      --muted: #a6b3be;
+      --line: #2d3842;
+      --green: #22c58b;
+      --green-strong: #15805b;
+      --cyan: #1ea7e1;
+      --gold: #e2c987;
+      --shadow: 0 18px 50px rgba(0,0,0,.28);
+      --glass-blur: 16px;
+      --radius: 22px;
+      font-family: Manrope, Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    html[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f3f6f8;
+      --bg-soft: #e7edf1;
+      --surface: rgba(255,255,255,.82);
+      --plate: #ffffff;
+      --text: #152028;
+      --muted: #52616d;
+      --line: #d5dfe6;
+      --green: #147a55;
+      --green-strong: #106345;
+      --cyan: #0b7eb0;
+      --gold: #8c6a24;
+      --shadow: 0 16px 42px rgba(20,38,52,.10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 14% 4%, color-mix(in srgb, var(--cyan) 14%, transparent), transparent 38rem),
+        radial-gradient(ellipse at 88% 26%, color-mix(in srgb, var(--green) 12%, transparent), transparent 34rem),
+        var(--bg);
+      line-height: 1.55;
+    }
+    button { font: inherit; }
+    .shell { width: min(1120px, calc(100% - 36px)); margin: 0 auto; padding: 30px 0 54px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .mark { width: 42px; height: 42px; border: 1px solid color-mix(in srgb, var(--cyan) 55%, var(--line)); border-radius: 14px; display: grid; place-items: center; color: var(--cyan); background: var(--surface); box-shadow: var(--shadow); }
+    .mark svg { width: 22px; height: 22px; }
+    .brand-name { margin: 0; font-weight: 750; letter-spacing: .02em; }
+    .brand-sub { margin: 1px 0 0; color: var(--muted); font-size: .83rem; }
+    .theme-toggle { border: 1px solid var(--line); color: var(--text); background: var(--surface); padding: 9px 13px; border-radius: 12px; cursor: pointer; backdrop-filter: blur(var(--glass-blur)); }
+    .theme-toggle:hover { border-color: var(--cyan); }
+    .hero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(245px, .6fr); gap: 18px; margin-bottom: 18px; }
+    .surface { border: 1px solid color-mix(in srgb, var(--line) 78%, transparent); background: var(--surface); box-shadow: var(--shadow); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur)); border-radius: var(--radius); }
+    .hero-copy { padding: clamp(22px, 4vw, 38px); position: relative; overflow: hidden; }
+    .eyebrow { color: var(--cyan); text-transform: uppercase; letter-spacing: .12em; font-size: .74rem; font-weight: 750; }
+    h1 { margin: 8px 0 10px; font-size: clamp(2rem, 5vw, 3.1rem); line-height: 1.08; letter-spacing: -.045em; }
+    .intro { max-width: 680px; margin: 0; color: var(--muted); }
+    .hero-stat { padding: 24px; display: flex; flex-direction: column; justify-content: center; }
+    .stat-label { color: var(--muted); font-size: .85rem; }
+    .stat-value { display: flex; align-items: baseline; gap: 7px; margin: 5px 0; font-size: 3rem; font-weight: 760; letter-spacing: -.06em; }
+    .stat-value span { color: var(--green); }
+    .progress-track { height: 8px; border-radius: 8px; background: var(--line); overflow: hidden; margin: 7px 0 12px; }
+    .progress-fill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--cyan), var(--green)); border-radius: inherit; }
+    .estimate { color: var(--muted); font-size: .84rem; }
+    .estimate strong { color: var(--green); font-weight: 650; }
+    .section { margin-top: 22px; }
+    .section-head { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin: 0 2px 12px; }
+    h2 { margin: 0; font-size: 1.12rem; letter-spacing: -.015em; }
+    .section-note { margin: 0; color: var(--muted); font-size: .82rem; }
+    .graph-wrap { padding: 18px; overflow: hidden; }
+    .graph { width: 100%; min-height: 210px; display: block; }
+    .edge { stroke: var(--line); stroke-width: 3; }
+    .edge.done { stroke: var(--green); }
+    .node { cursor: pointer; outline: none; }
+    .node circle { fill: var(--plate); stroke: var(--line); stroke-width: 2; transition: stroke .18s ease, r .18s ease; }
+    .node.done circle { fill: color-mix(in srgb, var(--green) 18%, var(--plate)); stroke: var(--green); }
+    .node:hover circle, .node:focus circle, .node[aria-pressed="true"] circle { stroke: var(--gold); stroke-width: 4; }
+    .node .number { fill: var(--text); font-size: 14px; font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+    .node .label { fill: var(--text); font-size: 13px; font-weight: 650; text-anchor: middle; }
+    .node .state { fill: var(--muted); font-size: 11px; text-anchor: middle; }
+    .detail { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; margin-top: 10px; padding: 14px 16px; border-radius: 16px; background: var(--plate); border: 1px solid var(--line); }
+    .detail h3 { margin: 0 0 3px; font-size: .98rem; }
+    .detail p { margin: 0; color: var(--muted); font-size: .88rem; }
+    .tag { color: var(--green); font-size: .76rem; white-space: nowrap; font-weight: 650; }
+    .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .list-panel { padding: 21px; }
+    .plain-list { margin: 13px 0 0; padding: 0; list-style: none; }
+    .plain-list li { padding: 11px 0; border-top: 1px solid var(--line); }
+    .plain-list li:first-child { border-top: 0; }
+    .decision-title { display: block; font-weight: 650; }
+    .decision-copy { display: block; color: var(--muted); font-size: .86rem; margin-top: 3px; }
+    .phase-list { margin-top: 13px; }
+    .phase { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); font-size: .88rem; }
+    .phase:first-child { border-top: 0; }
+    .phase span:last-child { color: var(--muted); white-space: nowrap; }
+    .phase.complete .phase-name::before { content: "✓ "; color: var(--green); }
+    .note { margin-top: 18px; padding: 15px 18px; color: var(--muted); font-size: .84rem; }
+    .note strong { color: var(--text); }
+    footer { margin-top: 22px; color: var(--muted); font-size: .78rem; text-align: center; }
+    @media (max-width: 760px) {
+      .hero, .columns { grid-template-columns: 1fr; }
+      .hero-stat { min-height: 170px; }
+      .section-head { display: block; }
+      .section-note { margin-top: 5px; }
+      .graph-wrap { padding: 10px; overflow-x: auto; }
+      .graph { min-width: 700px; }
+      .detail { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .surface, .theme-toggle { background: var(--plate); backdrop-filter: none; -webkit-backdrop-filter: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .surface, .theme-toggle { background: var(--plate); }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="brand" aria-label="IA Infinito — Gerador de Contratos">
+        <div class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <p class="brand-name">IA Infinito</p>
+          <p class="brand-sub">Gerador de Contratos · Acompanhamento do projeto</p>
+        </div>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Alternar tema claro e escuro">Tema claro</button>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <div class="hero-copy surface">
+        <span class="eyebrow">Go + SQLite (WAL) + S3 + Scalar · v1 Funcional</span>
+        <h1 id="pageTitle">Primeira versão (v1) concluída e validada.</h1>
+        <p class="intro">Sistema completo implementado em Go com <code>embed.FS</code>, SQLite em modo WAL, cliente BrasilAPI com cache e fallback, motor de PDF A4 via <code>chromedp</code> mantendo a logo oficial da <strong>IA Infinito</strong> em todas as páginas, camada S3 com fallback local, interface Split-Screen com Skeleton Loaders e documentação interativa Scalar em <code>/docs</code>.</p>
+      </div>
+      <aside class="hero-stat surface" aria-label="Progresso verificado">
+        <span class="stat-label">Progresso verificado do projeto</span>
+        <div class="stat-value"><span>100%</span></div>
+        <div class="progress-track" role="progressbar" aria-label="Progresso verificado" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div class="progress-fill"></div></div>
+        <div class="estimate"><strong>v1 Liberada</strong> · <code>go vet</code>, <code>go test</code> e <code>go build</code> aprovados.</div>
+      </aside>
+    </section>
+
+    <section class="section" aria-labelledby="graphTitle">
+      <div class="section-head">
+        <h2 id="graphTitle">Etapas e dependências</h2>
+        <p class="section-note">Selecione uma etapa para consultar o que foi entregue e validado.</p>
+      </div>
+      <div class="graph-wrap surface">
+        <svg class="graph" viewBox="0 0 900 230" role="group" aria-label="Grafo interativo das etapas do Gerador de Contratos">
+          <line class="edge done" x1="90" y1="86" x2="270" y2="86" />
+          <line class="edge done" x1="270" y1="86" x2="450" y2="86" />
+          <line class="edge done" x1="450" y1="86" x2="630" y2="86" />
+          <line class="edge done" x1="630" y1="86" x2="810" y2="86" />
+          <g class="node done" tabindex="0" role="button" aria-pressed="false" data-step="0" aria-label="Etapa 1: Modelo de Contrato e SDD, concluída">
+            <circle cx="90" cy="86" r="25"/><text class="number" x="90" y="86">1</text><text class="label" x="90" y="137">Contrato &amp; SDD</text><text class="state" x="90" y="157">concluído</text>
+          </g>
+          <g class="node done" tabindex="0" role="button" aria-pressed="false" data-step="1" aria-label="Etapa 2: Skeleton Go e SQLite, concluída">
+            <circle cx="270" cy="86" r="25"/><text class="number" x="270" y="86">2</text><text class="label" x="270" y="137">Skeleton &amp; SQLite</text><text class="state" x="270" y="157">concluído</text>
+          </g>
+          <g class="node done" tabindex="0" role="button" aria-pressed="false" data-step="2" aria-label="Etapa 3: Motor PDF e S3, concluída">
+            <circle cx="450" cy="86" r="25"/><text class="number" x="450" y="86">3</text><text class="label" x="450" y="137">PDF &amp; S3</text><text class="state" x="450" y="157">concluído</text>
+          </g>
+          <g class="node done" tabindex="0" role="button" aria-pressed="false" data-step="3" aria-label="Etapa 4: Split-Screen UI e Scalar, concluída">
+            <circle cx="630" cy="86" r="25"/><text class="number" x="630" y="86">4</text><text class="label" x="630" y="137">UI &amp; Scalar</text><text class="state" x="630" y="157">concluído</text>
+          </g>
+          <g class="node done" tabindex="0" role="button" aria-pressed="true" data-step="4" aria-label="Etapa 5: Testes e Docker, concluída">
+            <circle cx="810" cy="86" r="25"/><text class="number" x="810" y="86">5</text><text class="label" x="810" y="137">Testes &amp; Docker</text><text class="state" x="810" y="157">concluído</text>
+          </g>
+        </svg>
+        <div class="detail" aria-live="polite">
+          <div>
+            <h3 id="detailTitle">Testes &amp; Docker</h3>
+            <p id="detailCopy">Executados go vet ./..., go test -v ./... (domínio, repositório SQLite WAL, BrasilAPI, S3 fallback, template HTML e endpoints HTTP + geração real de PDF via chromedp) e go build, além de Dockerfile e docker-compose.yml.</p>
+          </div>
+          <span class="tag" id="detailTag">CONCLUÍDO · v1 VALIDADA</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section columns" aria-label="Decisões e status por etapa">
+      <article class="list-panel surface">
+        <h2>Decisões técnicas confirmadas</h2>
+        <ul class="plain-list">
+          <li><span class="decision-title">100% Go com <code>embed.FS</code></span><span class="decision-copy">Backend, templates HTML, OpenAPI 3.1 e interface Split-Screen empacotados no binário único <code>ia-infinito-contracts.exe</code>.</span></li>
+          <li><span class="decision-title">SQLite em modo WAL (<code>modernc.org/sqlite</code>)</span><span class="decision-copy">Driver puro Go (sem CGO) com tabela <code>contracts</code>, índices e cache <code>cnpj_cache</code>.</span></li>
+          <li><span class="decision-title">S3 com fallback local</span><span class="decision-copy">Upload via <code>aws-sdk-go-v2</code> quando configurado no <code>.env</code> e gravação automática em <code>./data/pdfs</code> no modo local.</span></li>
+          <li><span class="decision-title"><code>html/template</code> + <code>chromedp v0.23.1</code></span><span class="decision-copy">Pool persistente gerando PDF A4 com cabeçalho da IA Infinito e paginação em todas as páginas.</span></li>
+          <li><span class="decision-title">Documentação interativa via Scalar</span><span class="decision-copy">Rota <code>/docs</code> servindo OpenAPI 3.1 e endpoints compatíveis em <code>/api/*</code> e <code>/api/v1/*</code>.</span></li>
+        </ul>
+      </article>
+      <article class="list-panel surface">
+        <h2>Status por etapa</h2>
+        <div class="phase-list">
+          <div class="phase complete"><span class="phase-name">Modelo oficial do contrato IA Infinito e SDD</span><span>concluído</span></div>
+          <div class="phase complete"><span class="phase-name">Governança (diretório geral, estado, bugs e HTML)</span><span>concluído</span></div>
+          <div class="phase complete"><span class="phase-name">Skeleton Go, SQLite (WAL) e BrasilAPI</span><span>concluído</span></div>
+          <div class="phase complete"><span class="phase-name">Template HTML A4, motor PDF (chromedp) e S3</span><span>concluído</span></div>
+          <div class="phase complete"><span class="phase-name">Interface Split-Screen (Skeletons + Busca) e Scalar</span><span>concluído</span></div>
+          <div class="phase complete"><span class="phase-name">Testes automatizados (go test) e Docker</span><span>concluído</span></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="section" aria-labelledby="historyTitle">
+      <div class="section-head">
+        <h2 id="historyTitle">Registro de marcos e atualizações</h2>
+        <p class="section-note">Atualizado obrigatoriamente pelo agente a cada implementação ou correção.</p>
+      </div>
+      <article class="list-panel surface">
+        <ul class="plain-list">
+          <li>
+            <span class="decision-title">17/11/2026 · Publicação v1 no GitHub (README, LICENSE MIT e Higiene)</span>
+            <span class="decision-copy">Criados <code>README.md</code> (Hero HTML, badges Shields.io, diagrama Mermaid, endpoints Scalar e guia Docker/Go), <code>LICENSE</code> (MIT 2026) e <code>.gitignore</code> validado (sem <code>.env</code>, <code>data/</code>, <code>*.db</code> ou binários). Validado com <code>go vet ./...</code> e <code>go test -v ./...</code> e publicado em <code>https://github.com/joel299/gerador-contrato.git</code>.</span>
+          </li>
+          <li>
+            <span class="decision-title">17/11/2026 · v1.6 — Repasse Líquido Oficial (Gross-Up) e Link de Pagamento no WhatsApp</span>
+            <span class="decision-copy">Atualizada a fórmula de parcelamento para divisão inversa (<code>ValorLiquido / (1 - Taxa)</code>) com suporte a <code>1x (À vista - PIX)</code>, <code>1x (Cartão de Crédito)</code> e <code>2x–12x</code> em Go e JS, mantendo zero menção a juros, taxas ou percentuais na interface e no PDF. Adicionado campo opcional <strong>Link de Pagamento</strong> com atualização automática de valor na URL e envio condicional na mensagem do WhatsApp. Validado com <code>go vet ./...</code>, <code>go test -v ./...</code> e <code>go build</code>.</span>
+          </li>
+          <li>
+            <span class="decision-title">17/11/2026 · v1.5 — Parcelamento Progressivo Silencioso (1x–12x) e Consistência ao Centavo</span>
+            <span class="decision-copy">Implementada função central <code>CalculateSetupInstallments</code> em Go e espelho exato em JavaScript (0% em 1x/2x; +13,5% em 3x até +22,5% em 12x, com arredondamento por parcela para fechar exatamente <code>N × parcela = totalFinal</code>). Persistência separada de valor base (<code>setup_fee_cents</code>), total final (<code>setup_total_final_cents</code>) e valor da parcela no SQLite, sem qualquer menção a juros ou percentuais na UI ou no contrato. Validado com <code>go vet ./...</code>, <code>go test -v ./...</code> e <code>go build</code>.</span>
+          </li>
+          <li>
+            <span class="decision-title">17/11/2026 · v1.4 — Revisão Pré-VPS: Isolamento de Banco, Limpeza de Linguagem e Design System</span>
+            <span class="decision-copy">Banco principal <code>./data/contracts.db</code> limpo (<code>GET /api/contracts</code> retorna <code>[]</code>); todos os testes <code>*_test.go</code> confirmados com isolamento em <code>t.TempDir()</code>. Removidos termos técnicos da UI (<code>SQLite</code>, <code>BrasilAPI</code>, <code>API Docs</code> na barra superior), aplicado backdrop sutil no modal e confirmada conformidade total com <code>SYSTEM_DESIGN.md</code> e <code>COMPONENTS-SKELETON.html</code> (<code>border-radius: 10px</code> em botões/inputs, pílula apenas em tags de status).</span>
+          </li>
+          <li>
+            <span class="decision-title">17/11/2026 · v1.3 — Alinhamento de Assinaturas (BUG-003) e Testemunhas Opcionais</span>
+            <span class="decision-copy">Corrigido <code>BUG-003</code> em <code>contract_v1.html</code> (<code>table-layout: fixed</code>, <code>vertical-align: top</code>, <code>padding-top: 36px</code> e ordem padronizada de dados). Adicionado toggle <code>include_witnesses</code> no formulário, SQLite (migration aditiva) e template para remover <code>TESTEMUNHA 1/2</code> quando desmarcado, ajustando o texto para assinatura eletrônica. Validado com <code>go vet ./...</code>, <code>go test -v ./...</code> e <code>go build</code>.</span>
+          </li>
+          <li>
+            <span class="decision-title">17/11/2026 · v1.2 — Condições Comerciais (Sem Mensalidade, Parcelamento 1x–12x, Assinatura) e Dados Oficiais</span>
+            <span class="decision-copy">Adicionados na Seção 3, SQLite (migration aditiva segura) e <code>contract_v1.html</code>: toggle de mensalidade recorrente opcional (<code>has_monthly_fee</code>), parcelamento automático da implantação de <code>1x</code> a <code>12x</code> (<code>setup_installments</code> e valor por extenso), opção de pagamento da 1ª parcela no ato da assinatura (<code>pay_on_signature</code>) e dados fixos da CONTRATADA (<code>JOEL ACOSTA QUINTANA JUNIOR DESENVOLVIMENTO DE PROGRAMAS LTDA - EPP</code>, CNPJ <code>63.741.075/0001-43</code>). Validado com <code>go vet ./...</code>, <code>go test -v ./...</code> e <code>go build</code>.</span>
+          </li>
+          <li>
+            <span class="decision-title">17/11/2026 · v1.1 — Correção BUG-001, CPF opcional, PWA e fluxo WhatsApp</span>
+            <span class="decision-copy">Corrigido <code>BUG-001</code> (espaço em branco no topo do preview e PDF via <code>[hidden] { display: none !important; }</code> e ajuste <code>@page</code> para <code>19mm</code>). Adicionado toggle de CPF opcional com validação Módulo 11 em Go e JS, suporte completo a PWA (<code>manifest.webmanifest</code>, <code>sw.js</code>, ícones 192/512 e abas mobile <code>&lt;= 900px</code>) e botão integrado <strong>Exportar PDF e Enviar no WhatsApp</strong> (<code>navigator.canShare</code> + <code>wa.me/55...</code>). Revalidado com <code>go vet ./...</code>, <code>go test -v ./...</code> e <code>go build</code>.</span>
+          </li>
+          <li>
+            <span class="decision-title">17/11/2026 · v1 implementada, corrigida (BUG-002) e validada</span>
+            <span class="decision-copy">Implementados todos os pacotes Go (<code>config</code>, <code>domain</code>, <code>database</code>, <code>repository</code>, <code>service</code>, <code>handler</code>, <code>cmd/server</code>), template oficial <code>contract_v1.html</code>, interface Split-Screen <code>web/index.html</code> (Liquid Glass estabilizado, máscaras, extenso ao vivo e Skeleton Loaders), <code>openapi.yaml</code> + Scalar em <code>/docs</code> e <code>Dockerfile</code>. Corrigido <code>BUG-001</code> (assinatura da API <code>chromedp v0.23.1</code>). Validações: <code>go vet ./...</code>, <code>go test -v ./...</code> e <code>go build</code> aprovados com 100% de sucesso.</span>
+          </li>
+          <li>
+            <span class="decision-title">17/11/2026 · Estruturação inicial do projeto e governança</span>
+            <span class="decision-copy">Validado o modelo padrão do Contrato de Prestação de Serviços da IA Infinito, elaborado o <code>SDD.md</code> completo e criados os documentos de controle (<code>diretorio-geral.md</code>, <code>estado-atual.md</code>, <code>bugs-e-dificuldades.md</code> e <code>CONTRATO-PROGRESSO.html</code>).</span>
+          </li>
+        </ul>
+      </article>
+    </section>
+
+    <aside class="note surface">
+      <strong>Base dos 100%:</strong> Todos os módulos da v1 foram implementados, testados via <code>go test -v ./...</code> (incluindo geração real de PDF A4 com <code>chromedp</code>), verificados com <code>go vet ./...</code> e compilados com <code>go build</code>.
+    </aside>
+
+    <footer>Atualizado em 17/11/2026 · v1 funcional pronta para teste manual. Detalhes em <code>docs/estado-atual.md</code> e <code>docs/bugs-e-dificuldades.md</code>.</footer>
+  </main>
+  <script>
+    const steps = [
+      { title: 'Contrato & SDD', copy: 'Modelo oficial do contrato IA Infinito padronizado (logo em todas as páginas, escopo de canais e tráfego pago com risco da contratada) e SDD.md concluído.', tag: 'CONCLUÍDO' },
+      { title: 'Skeleton & SQLite', copy: 'go.mod, estrutura Go, config, domínio (CNPJ/CPF/BRL/extenso), SQLite em modo WAL com migrations automáticas e cliente BrasilAPI com cache e fallback.', tag: 'CONCLUÍDO' },
+      { title: 'PDF & S3', copy: 'Template HTML/CSS A4 oficial (contract_v1.html), pool persistente chromedp v0.23.1 com cabeçalho/rodapé em todas as páginas e StorageProvider S3 + fallback local.', tag: 'CONCLUÍDO' },
+      { title: 'UI & Scalar', copy: 'Interface Split-Screen (web/index.html) com Liquid Glass estabilizado, temas Escuro/Claro, Skeleton Loaders, modal de busca SQLite e Scalar em /docs.', tag: 'CONCLUÍDO' },
+      { title: 'Testes & Docker', copy: 'Executados go vet ./..., go test -v ./... e go build com 100% de aprovação, além de Dockerfile multi-stage e docker-compose.yml.', tag: 'CONCLUÍDO · v1 VALIDADA' }
+    ];
+    const nodes = [...document.querySelectorAll('.node')];
+    function selectStep(node) {
+      const step = steps[Number(node.dataset.step)];
+      nodes.forEach(item => item.setAttribute('aria-pressed', String(item === node)));
+      document.querySelector('#detailTitle').textContent = step.title;
+      document.querySelector('#detailCopy').textContent = step.copy;
+      document.querySelector('#detailTag').textContent = step.tag;
+    }
+    nodes.forEach(node => {
+      node.addEventListener('click', () => selectStep(node));
+      node.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectStep(node); }
+      });
+    });
+    const toggle = document.querySelector('#themeToggle');
+    const root = document.documentElement;
+    const savedTheme = localStorage.getItem('contrato-progress-theme');
+    if (savedTheme === 'light' || savedTheme === 'dark') root.dataset.theme = savedTheme;
+    function updateToggle() { toggle.textContent = root.dataset.theme === 'dark' ? 'Tema claro' : 'Tema escuro'; }
+    updateToggle();
+    toggle.addEventListener('click', () => {
+      root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('contrato-progress-theme', root.dataset.theme);
+      updateToggle();
+    });
+  </script>
+</body>
+</html>
