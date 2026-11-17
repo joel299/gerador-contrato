@@ -1,7 +1,7 @@
 # Estado atual — Gerador de Contratos IA Infinito
 
 **Última atualização:** 17/11/2026  
-**Status:** **v1.6 em produção com CI/CD automatizado e MinIO S3 integrado no Coolify.** `docker-compose.coolify.yml` atualizado com serviços `minio` (`256m`, `gerador_contrato_minio_data:/data`), `minio-init` (criação automática do bucket `contratos`) e `app` conectado internamente via `http://minio:9000` com `S3_USE_PATH_STYLE=true`. Basta definir `MINIO_ROOT_USER` e `MINIO_ROOT_PASSWORD` no painel do Coolify.
+**Status:** **v1.7 em produção com CI/CD automatizado e MinIO S3 ativo no Coolify.** `docker-compose.coolify.yml` com serviços `minio` (`pgsty/silo`, `256m`, `gerador_contrato_minio_data:/data`), `minio-init` (`pgsty/mc`, cria o bucket `contratos`) e `app` conectado internamente via `http://minio:9000` com `S3_USE_PATH_STYLE=true`. Variáveis `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` aplicadas no Coolify; `.env.example` documenta todas as variáveis e o `.env` local segue ignorado pelo Git.
 
 ## Deploy em produção (verificado)
 
@@ -9,14 +9,15 @@
 - **Imagem:** `ghcr.io/joel299/gerador-contrato:coolify` (pacote privado no GHCR; o pull a partir da VPS funciona com a credencial já existente no host).
 - **Domínio:** `https://contratos-ia-infinito.18.118.25.255.sslip.io` (gerado no padrão `sslip.io` do próprio Coolify, com HTTPS válido e Let's Encrypt via Traefik).
 - **Porta interna:** `8080` (serviço `app`, sem proxy Traefik próprio; roteamento gerenciado pelo Coolify).
-- **Persistência:** volume nomeado `olnybeujwwk55ukczny7rwax_gerador-contrato-data:/app/data` (SQLite WAL + PDFs locais).
-- **Limite de memória:** `mem_limit: 768m`; `pull_policy: always` para sempre buscar a imagem nova no redeploy.
-- **Healthcheck:** `GET /health` → `200 {"chromium_pool_ok":true,"sqlite_ok":true,"status":"ok","storage_provider":"local"}`.
+- **Persistência:** volumes nomeados `olnybeujwwk55ukczny7rwax_gerador-contrato-data:/app/data` (SQLite WAL) e `olnybeujwwk55ukczny7rwax_gerador-contrato-minio-data:/data` (objetos do MinIO).
+- **Limite de memória:** `app` com `mem_limit: 768m` e `minio` com `256m`; `pull_policy: always` para sempre buscar a imagem nova no redeploy.
+- **Healthcheck:** `GET /health` → `200 {"chromium_pool_ok":true,"sqlite_ok":true,"status":"ok","storage_provider":"s3"}`.
+- **Último deploy validado:** `ao8kbimwayuckln8zvcxtwa7`, commit `f034a9c`, status `finished`; workflow run `44158981542` verde.
 
 ### Variáveis configuradas no Coolify
 
-Obrigatórias/preenchidas: `PORT`, `DB_PATH`, `LOCAL_PDF_DIR`, `TZ`, `DEFAULT_PAYMENT_LINK` e o par de domínio do compose (`SERVICE_FQDN_APP`, `SERVICE_URL_APP`).  
-Opcionais criadas vazias, prontas para preenchimento: `S3_ENDPOINT`, `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`.
+Runtime e preview: `PORT`, `DB_PATH`, `LOCAL_PDF_DIR`, `TZ`, `DEFAULT_PAYMENT_LINK`, `SERVICE_FQDN_APP`, `SERVICE_URL_APP`, `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `S3_BUCKET`, `S3_REGION`, `S3_USE_PATH_STYLE` e `APP_BASE_URL`.  
+O `app` recebe `S3_ENDPOINT=http://minio:9000`, `S3_ACCESS_KEY`/`S3_SECRET_KEY` herdados de `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` pelo compose. As chaves antigas `S3_ENDPOINT`, `S3_ACCESS_KEY` e `S3_SECRET_KEY` permanecem cadastradas com valor vazio (o token da API não possui permissão de exclusão); não afetam o container porque o compose define os valores.
 
 > Nenhum valor de segredo, token ou URL privada de webhook é registrado neste documento.
 
@@ -40,7 +41,9 @@ Cadastrados em `joel299/gerador-contrato` → Settings → Secrets and variables
 2. **Teste de PDF falhava no runner** (`chromedp ... starting the browser: context deadline exceeded`) — runner sem Chrome. Adicionado `setup-chrome` no job e o teste passou a respeitar `CHROME_PATH`.
 3. **`CHROME_BIN`/`CHROME_PATH` robustos na imagem** — criado symlink estável `/usr/local/bin/chrome` (o nome do binário varia entre versões do pacote `chromium` no Alpine).
 4. **Fuso horário do container** — `tzdata` + `TZ=America/Campo_Grande` para não deslocar datas padrão do contrato em UTC.
-5. **Compose parametrizado** — `PORT`, `DB_PATH`, `LOCAL_PDF_DIR` e `TZ` agora aceitam override pelas variáveis do Coolify.
+5. **Compose parametrizado** — `PORT`, `DB_PATH`, `LOCAL_PDF_DIR`, `TZ`, `S3_USE_PATH_STYLE` e `APP_BASE_URL` aceitam override pelas variáveis do Coolify.
+6. **Imagens do MinIO trocadas** — `minio/minio:latest` e `minio/mc:latest` passaram a retornar *pull access denied* (repositório removido do Docker Hub). Substituídas por `pgsty/silo:RELEASE.2026-10-15T00-00-00Z` e `pgsty/mc:latest`, conforme o template oficial do Coolify; healthcheck do MinIO passou a usar `mc ready local`.
+7. **`.env.example` completo** — documenta HTTP, `APP_BASE_URL`, SQLite, storage local, MinIO/S3, pool Chromium, `TZ`, link InfinitePay e dados da CONTRATADA, com placeholders no lugar de segredos. `.env` local (25 variáveis) permanece ignorado pelo Git (`git check-ignore -v .env` → `.gitignore:2:.env`).
 
 ## Validações executadas
 
@@ -50,6 +53,11 @@ Cadastrados em `joel299/gerador-contrato` → Settings → Secrets and variables
 - Workflow run `44151116610`: job de testes/build verde; job de deploy falhou por secrets ausentes (comportamento esperado antes da configuração).
 - Workflow run `44155345572` (`workflow_dispatch`): **ambos os jobs verdes** e `Coolify webhook HTTP status: 200`.
 - Deploy no Coolify (`u1tctnt28aqhpxluxcpdmvpo`, commit `de1c35a`): `finished`; aplicação `running:healthy`; `GET /health` retornando 200 em HTTP e HTTPS.
+- `docker compose --env-file .env -f docker-compose.coolify.yml config --services`: `minio`, `app`, `minio-init` (sem avisos de variável ausente).
+- Workflow run `44158981542` (commit `f034a9c`): verde; webhook acionou o deploy `ao8kbimwayuckln8zvcxtwa7` → `finished`.
+- `GET /health` em 17/11/2026: `{"chromium_pool_ok":true,"sqlite_ok":true,"status":"ok","storage_provider":"s3"}`.
+- Geração de PDF real no deploy (`POST /api/v1/contracts/{id}/pdf`): `200`, `storage_provider: "s3"`, `bucket: "contratos"`, `key: contracts/2026/11/CTR-2026-0002_*.pdf`, 213.353 bytes — confirma upload no bucket criado pelo `minio-init`.
+- **Limitação encontrada no download:** `GET /api/v1/contracts/{id}/pdf` responde `302` para uma URL pré-assinada com o host interno `http://minio:9000`, inacessível pelo navegador. O upload funciona; o download direto pelo endpoint público não. Correção exige decisão de arquitetura (proxy do PDF pelo `app` ou endpoint público dedicado para o MinIO) — pendente de autorização do Joel.
 
 ## Histórico funcional anterior (preservado)
 
@@ -75,7 +83,7 @@ Cadastrados em `joel299/gerador-contrato` → Settings → Secrets and variables
 
 ## Pendências e próximos passos
 
-1. **Domínio próprio (opcional):** o app está em `*.sslip.io`. Para usar `contratos.iainfinito.com.br`, criar registro DNS **A** apontando para `18.118.25.255` (hoje `iainfinito.com.br` está em outro host) e trocar o domínio no recurso do Coolify.
-2. **Credencial GHCR formal (recomendado):** o pull da imagem privada funciona na VPS, mas convém cadastrar a credencial em **Servers → Registries** (escopo `read:packages`) para não depender de login manual no host.
-3. **S3 (opcional):** preencher as cinco variáveis no Coolify para sair do armazenamento local de PDFs.
+1. **Domínio próprio (bloqueado por DNS):** `contratos.iainfinito.com.br` ainda não possui registro **A**; o DNS do domínio está no Cloudflare e `iainfinito.com.br` aponta para `185.244.219.19` (não para o servidor do Coolify `18.118.25.255`). Criar o registro A e depois adicionar o domínio ao serviço `app` (porta `8080`) no Coolify.
+2. **Download de PDF com S3:** decidir entre proxy no `app` (recomendado, mantém o MinIO privado) ou expor um endpoint público para o MinIO e pré-assinar com esse host. O upload já está validado.
+3. **Credencial GHCR formal (recomendado):** o pull da imagem privada funciona na VPS, mas convém cadastrar a credencial em **Servers → Registries** (escopo `read:packages`) para não depender de login manual no host.
 4. **Repositório e pacote:** o repositório está público; o pacote GHCR segue privado (o que exige credencial no Coolify). Torná-lo público é decisão do Joel.

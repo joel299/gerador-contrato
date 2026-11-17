@@ -231,6 +231,10 @@
       <article class="list-panel surface">
         <ul class="plain-list">
           <li>
+            <span class="decision-title">17/11/2026 · v1.7 — MinIO ativo, .env.example completo e deploy validado</span>
+            <span class="decision-copy">Imagens do MinIO trocadas para <code>pgsty/silo</code> e <code>pgsty/mc</code> (o repositório <code>minio/minio</code> saiu do Docker Hub e causava <em>pull access denied</em>). Healthcheck passou a usar <code>mc ready local</code>. Variáveis <code>MINIO_ROOT_USER</code>, <code>MINIO_ROOT_PASSWORD</code>, <code>S3_BUCKET</code>, <code>S3_REGION</code>, <code>S3_USE_PATH_STYLE</code>, <code>APP_BASE_URL</code> e <code>DEFAULT_PAYMENT_LINK</code> aplicadas no Coolify (runtime e preview). <code>.env.example</code> documenta todas as variáveis do app e da stack, sem segredos; <code>.env</code> local permanece ignorado pelo Git. Workflow <code>44158981542</code> verde, deploy <code>ao8kbimwayuckln8zvcxtwa7</code> (<code>f034a9c</code>) <code>finished</code>, <code>/health</code> com <code>storage_provider: "s3"</code> e geração real de PDF confirmada no bucket <code>contratos</code> (213.353 bytes). Pendências: registro DNS A de <code>contratos.iainfinito.com.br</code> e correção do download de PDF (hoje redireciona para o host interno <code>http://minio:9000</code>).</span>
+          </li>
+          <li>
             <span class="decision-title">17/11/2026 · MinIO S3 integrado ao stack Coolify (app + minio + minio-init)</span>
             <span class="decision-copy">Adicionados serviços <code>minio</code> (<code>256m</code>, volume <code>gerador_contrato_minio_data:/data</code>) e <code>minio-init</code> (criação automática do bucket <code>contratos</code> via <code>mc mb --ignore-existing</code>) em <code>docker-compose.coolify.yml</code>, com o <code>app</code> conectado via <code>http://minio:9000</code> e <code>S3_USE_PATH_STYLE=true</code> (validado por <code>TestStorageService_S3PathStyleConfig</code>). No Coolify, basta preencher <code>MINIO_ROOT_USER</code> e <code>MINIO_ROOT_PASSWORD</code>.</span>
           </li>
@@ -290,7 +294,7 @@
       <strong>Base dos 100%:</strong> Módulos da v1 implementados e testados com <code>go test ./...</code> (incluindo geração real de PDF A4 com <code>chromedp</code>), verificados com <code>go vet ./...</code>, compilados com <code>go build</code> e publicados pelo workflow <code>44155345572</code> (testes + build GHCR + webhook Coolify HTTP 200).
     </aside>
 
-    <footer>Atualizado em 17/11/2026 · v1 em produção com deploy automatizado. Detalhes em <code>docs/estado-atual.md</code> e <code>docs/bugs-e-dificuldades.md</code>.</footer>
+    <footer>Atualizado em 17/11/2026 · v1.7 em produção com deploy automatizado e MinIO S3 ativo. Detalhes em <code>docs/estado-atual.md</code> e <code>docs/bugs-e-dificuldades.md</code>.</footer>
   </main>
   <script>
     const steps = [
