@@ -55,7 +55,7 @@ func Load() *Config {
 		S3UsePathStyle: getEnvBool("S3_USE_PATH_STYLE", true),
 
 		PDFPoolSize: poolSize,
-		ChromePath:  os.Getenv("CHROME_PATH"),
+		ChromePath:  getEnv("CHROME_PATH", os.Getenv("CHROME_BIN")),
 
 		ContratadaRazaoSocial:   getEnv("CONTRATADA_RAZAO_SOCIAL", "JOEL ACOSTA QUINTANA JUNIOR DESENVOLVIMENTO DE PROGRAMAS LTDA - EPP"),
 		ContratadaCNPJ:          getEnv("CONTRATADA_CNPJ", "63741075000143"),

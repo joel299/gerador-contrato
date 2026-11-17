@@ -1,7 +1,7 @@
 # Estado atual — Gerador de Contratos IA Infinito
 
 **Última atualização:** 17/11/2026  
-**Status:** **v1.6 Publicada no GitHub (`https://github.com/joel299/gerador-contrato.git`).** Repositório higienizado (`.gitignore`), `README.md` completo (Hero HTML, badges, Mermaid, arquitetura e instruções), `LICENSE` (MIT 2026) adicionada, `go vet ./...` e `go test -v ./...` 100% aprovados.
+**Status:** **v1.6 + Pipeline CI/CD Coolify (GHCR) Publicado em `main`.** Criados `Dockerfile` multi-stage (`linux/amd64`, Alpine + Chromium + fontes pt-BR, usuário não-root), `.dockerignore`, `docker-compose.coolify.yml` (`mem_limit: 768m`, volume `/app/data`) e workflow `.github/workflows/publish-coolify-image.yml` (`go vet` + `go test` + build/push GHCR + webhook Coolify).
 
 ## Retomada rápida
 

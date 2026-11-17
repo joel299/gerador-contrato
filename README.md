@@ -130,6 +130,14 @@ docker build -t ia-infinito-contracts:latest .
 docker run -d -p 8080:8080 -v $(pwd)/data:/app/data --name contratos-ia ia-infinito-contracts:latest
 ```
 
+### 3. Deploy Automatizado (GitHub Actions + GHCR + Coolify)
+
+O pipeline em `.github/workflows/publish-coolify-image.yml` executa `go vet` e `go test`, constrói a imagem `linux/amd64` (`ghcr.io/joel299/gerador-contrato:coolify` e `sha-<commit>`) e aciona o webhook do Coolify usando `docker-compose.coolify.yml`:
+
+- **Porta interna:** `8080` (sem proxy Traefik próprio; gerenciado pelo Coolify).
+- **Volume persistente:** `gerador_contrato_data:/app/data` (SQLite WAL e PDFs locais).
+- **Secrets no GitHub Actions:** `COOLIFY_DEPLOY_WEBHOOK` e `COOLIFY_DEPLOY_TOKEN`.
+
 ---
 
 ## Licença

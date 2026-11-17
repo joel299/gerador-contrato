@@ -1,18 +1,40 @@
-# Stage 1: Build Go binary (Pure Go, CGO_ENABLED=0)
+# Stage 1: Build Go static binary (Pure Go, CGO_ENABLED=0)
 FROM golang:1.26-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /ia-infinito-contracts ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /app/server ./cmd/server
 
-# Stage 2: Runtime with Chromium headless
+# Stage 2: Runtime leve com Chromium Headless e fontes pt-BR
 FROM alpine:3.20
-RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
-ENV CHROME_PATH=/usr/bin/chromium-browser
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto \
+    wget
+
+RUN addgroup -S app && adduser -S -G app app
 WORKDIR /app
-COPY --from=builder /ia-infinito-contracts /app/ia-infinito-contracts
-RUN mkdir -p /app/data/pdfs
+COPY --from=builder /app/server /app/server
+RUN mkdir -p /app/data/pdfs && chown -R app:app /app
+
+ENV PORT=8080 \
+    DB_PATH=/app/data/contracts.db \
+    LOCAL_PDF_DIR=/app/data/pdfs \
+    CHROME_BIN=/usr/bin/chromium-browser \
+    CHROME_PATH=/usr/bin/chromium-browser \
+    CHROMEDP_NO_SANDBOX=true
+
+USER app
 EXPOSE 8080
 VOLUME ["/app/data"]
-CMD ["/app/ia-infinito-contracts"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:8080/health >/dev/null || exit 1
+
+CMD ["/app/server"]

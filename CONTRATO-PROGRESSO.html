@@ -229,6 +229,10 @@
       <article class="list-panel surface">
         <ul class="plain-list">
           <li>
+            <span class="decision-title">17/11/2026 · Pipeline CI/CD Coolify (GitHub Actions + GHCR)</span>
+            <span class="decision-copy">Configurados <code>Dockerfile</code> multi-stage (<code>golang:1.26-alpine</code> + <code>alpine:3.20</code> com Chromium e fontes pt-BR, usuário não-root), <code>.dockerignore</code>, <code>docker-compose.coolify.yml</code> (<code>mem_limit: 768m</code>, volume <code>/app/data</code>) e workflow <code>.github/workflows/publish-coolify-image.yml</code> (<code>go vet</code> + <code>go test</code> + push <code>ghcr.io/joel299/gerador-contrato:coolify</code> + webhook Coolify).</span>
+          </li>
+          <li>
             <span class="decision-title">17/11/2026 · Publicação v1 no GitHub (README, LICENSE MIT e Higiene)</span>
             <span class="decision-copy">Criados <code>README.md</code> (Hero HTML, badges Shields.io, diagrama Mermaid, endpoints Scalar e guia Docker/Go), <code>LICENSE</code> (MIT 2026) e <code>.gitignore</code> validado (sem <code>.env</code>, <code>data/</code>, <code>*.db</code> ou binários). Validado com <code>go vet ./...</code> e <code>go test -v ./...</code> e publicado em <code>https://github.com/joel299/gerador-contrato.git</code>.</span>
           </li>
