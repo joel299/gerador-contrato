@@ -1,6 +1,7 @@
 package service
 
 import (
+	"html"
 	"strings"
 	"testing"
 
@@ -160,5 +161,130 @@ func TestRenderService_OfficialContractContentAndEscaping(t *testing.T) {
 	}
 	if !strings.Contains(htmlNoWitnesses, "vertical-align: top;") {
 		t.Errorf("expected vertical-align: top on signature grid cells")
+	}
+}
+
+func TestRenderService_MarketingIAInfinito_CompleteAndPartial(t *testing.T) {
+	cfg := &config.Config{
+		ContratadaRazaoSocial:   "JOEL ACOSTA QUINTANA JUNIOR DESENVOLVIMENTO DE PROGRAMAS LTDA - EPP",
+		ContratadaCNPJ:          "63741075000143",
+		ContratadaEndereco:      "Campo Grande/MS",
+		ContratadaRepresentante: "Joel Acosta Quintana Junior",
+		DefaultCityForum:        "Campo Grande/MS",
+	}
+	svc, err := NewRenderService(cfg)
+	if err != nil {
+		t.Fatalf("NewRenderService failed: %v", err)
+	}
+
+	boolTrue := true
+	// 1. Complete marketing_ia_infinito contract
+	fullEscopo := domain.DefaultEscopoMarketing()
+	fullEscopo.QtdImagens = 4
+	fullEscopo.FreqImagens = "semanais"
+	fullEscopo.QtdReels = 3
+	fullEscopo.FreqReels = "semanais"
+	fullEscopo.DirecionamentoStories = true
+	fullEscopo.HorasGravacaoSemanal = 1
+
+	inFull := domain.ContractInput{
+		ModeloContrato:    domain.ModeloMarketingIAInfinito,
+		EscopoMarketing:   &fullEscopo,
+		ClientCompanyName: "Clínica Exemplo Ltda",
+		ClientTradeName:   "Clínica Exemplo",
+		ClientCNPJ:        "11222333000181",
+		ClientAddress:     "Av. Afonso Pena, 1500, Centro, Campo Grande/MS",
+		ClientRepName:     "Dra. Ana Silva",
+		ClientEmail:       "ana@clinica.com.br",
+		ClientPhone:       "(67) 99999-0000",
+		SetupFeeCents:     150000,
+		HasMonthlyFee:     &boolTrue,
+		MonthlyFeeCents:   250000,
+		DueDay:            10,
+		StartDate:         "2026-11-22",
+		CityForum:         "Campo Grande/MS",
+	}
+	htmlFull, err := svc.RenderHTML(inFull)
+	if err != nil {
+		t.Fatalf("RenderHTML marketing full failed: %v", err)
+	}
+
+	mustHaveFull := []string{
+		"counter-reset: clausula;",
+		"counter-increment: clausula;",
+		"JOEL ACOSTA QUINTANA JUNIOR DESENVOLVIMENTO DE PROGRAMAS LTDA - EPP",
+		"63.741.075/0001-43",
+		"Joel Acosta Quintana Junior",
+		"Clínica Exemplo",
+		"TRÁFEGO PAGO, INVESTIMENTO E ASSUNÇÃO DE RISCO",
+		"Assunção Integral do Investimento e Risco pela Contratada",
+		"IMPLANTAÇÃO / SETUP",
+		"1.500,00",
+		"2.500,00",
+		"WhatsApp, Instagram, Facebook, Google e TikTok",
+		"criação de 4 (quatro) imagens/artes semanais",
+		"edição de até 3 (três) Reels semanais + direcionamento de Stories",
+		"Campo Grande/MS, 22 de novembro de 2026.",
+		"Cláusula 14",
+	}
+	htmlFullDecoded := html.UnescapeString(htmlFull)
+	for _, needle := range mustHaveFull {
+		if !strings.Contains(htmlFullDecoded, needle) {
+			t.Errorf("full marketing contract missing %q", needle)
+		}
+	}
+
+	// 2. Partial marketing_ia_infinito contract (no setup, no paid traffic, no link multicanal, 8 monthly images, 0 reels, no stories)
+	partialEscopo := domain.EscopoMarketing{
+		CicloEstrategicoDias:    90,
+		PosicionamentoEditorial: true,
+		ConteudoOrganico:        true,
+		LinkMulticanal:          false,
+		TrafegoPago:             false,
+		CaptacaoLeads:           true,
+		QtdImagens:              8,
+		FreqImagens:             "mensais",
+		QtdReels:                0,
+		FreqReels:               "semanais",
+		DirecionamentoStories:   false,
+		HorasGravacaoSemanal:    2,
+		Canais:                  []string{"WhatsApp"},
+	}
+	inPartial := inFull
+	inPartial.EscopoMarketing = &partialEscopo
+	inPartial.SetupFeeCents = 0
+
+	htmlPartial, err := svc.RenderHTML(inPartial)
+	if err != nil {
+		t.Fatalf("RenderHTML marketing partial failed: %v", err)
+	}
+
+	mustHavePartial := []string{
+		"criação de 8 (oito) imagens/artes mensais",
+		"orientação de gravação (2h/semana em bloco)",
+		"Cláusula 13",
+		"2.500,00",
+	}
+	for _, needle := range mustHavePartial {
+		if !strings.Contains(htmlPartial, needle) {
+			t.Errorf("partial marketing contract missing %q", needle)
+		}
+	}
+
+	mustOmitPartial := []string{
+		"TRÁFEGO PAGO, INVESTIMENTO E ASSUNÇÃO DE RISCO",
+		"TRÁFEGO PAGO E RISCO",
+		"CANAIS INTEGRADOS",
+		"IMPLANTAÇÃO / SETUP",
+		"Implantação / Setup:",
+		"com verba de tráfego pago já assumida pela CONTRATADA",
+		"Custear integralmente a verba de tráfego pago",
+		"direcionamento de Stories",
+		"Reels",
+	}
+	for _, forbidden := range mustOmitPartial {
+		if strings.Contains(htmlPartial, forbidden) {
+			t.Errorf("partial marketing contract must omit %q", forbidden)
+		}
 	}
 }

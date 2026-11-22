@@ -68,6 +68,12 @@ func (h *ContractHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rawJSON, _ := json.Marshal(in)
+	escopoJSON := "{}"
+	if in.ModeloContrato == domain.ModeloMarketingIAInfinito && in.EscopoMarketing != nil {
+		if b, err := json.Marshal(in.EscopoMarketing); err == nil {
+			escopoJSON = string(b)
+		}
+	}
 	c := &domain.Contract{
 		ClientCompanyName:          in.ClientCompanyName,
 		ClientTradeName:            in.ClientTradeName,
@@ -89,6 +95,8 @@ func (h *ContractHandler) Create(w http.ResponseWriter, r *http.Request) {
 		DueDay:                     in.DueDay,
 		StartDate:                  in.StartDate,
 		CityForum:                  in.CityForum,
+		ModeloContrato:             in.ModeloContrato,
+		EscopoJSON:                 escopoJSON,
 		PayloadJSON:                string(rawJSON),
 		Status:                     domain.StatusDraft,
 	}
@@ -151,6 +159,12 @@ func (h *ContractHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rawJSON, _ := json.Marshal(in)
+	escopoJSON := "{}"
+	if in.ModeloContrato == domain.ModeloMarketingIAInfinito && in.EscopoMarketing != nil {
+		if b, err := json.Marshal(in.EscopoMarketing); err == nil {
+			escopoJSON = string(b)
+		}
+	}
 	existing.ClientCompanyName = in.ClientCompanyName
 	existing.ClientTradeName = in.ClientTradeName
 	existing.ClientCNPJ = in.ClientCNPJ
@@ -171,6 +185,8 @@ func (h *ContractHandler) Update(w http.ResponseWriter, r *http.Request) {
 	existing.DueDay = in.DueDay
 	existing.StartDate = in.StartDate
 	existing.CityForum = in.CityForum
+	existing.ModeloContrato = in.ModeloContrato
+	existing.EscopoJSON = escopoJSON
 	existing.PayloadJSON = string(rawJSON)
 
 	if err := h.repo.Update(r.Context(), existing); err != nil {
@@ -202,6 +218,16 @@ func (h *ContractHandler) generateAndStorePDF(r *http.Request, c *domain.Contrac
 			DueDay:             c.DueDay,
 			StartDate:          c.StartDate,
 			CityForum:          c.CityForum,
+			ModeloContrato:     c.ModeloContrato,
+		}
+	}
+	if in.ModeloContrato == "" && c.ModeloContrato != "" {
+		in.ModeloContrato = c.ModeloContrato
+	}
+	if in.ModeloContrato == domain.ModeloMarketingIAInfinito && in.EscopoMarketing == nil && c.EscopoJSON != "" && c.EscopoJSON != "{}" {
+		var escopo domain.EscopoMarketing
+		if err := json.Unmarshal([]byte(c.EscopoJSON), &escopo); err == nil {
+			in.EscopoMarketing = &escopo
 		}
 	}
 

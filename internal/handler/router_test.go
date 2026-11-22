@@ -174,4 +174,100 @@ func TestHTTP_EndpointsAndPDFGeneration(t *testing.T) {
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "url.pathname.startsWith('/api/')") {
 		t.Fatalf("GET /sw.js missing /api/ bypass")
 	}
+
+	// 9. Modelo Marketing IA Infinito Completo -> Create + PDF generation
+	mktFullPayload := `{
+		"modelo_contrato": "marketing_ia_infinito",
+		"client_company_name": "Clinica Alpha Ltda",
+		"client_trade_name": "Alpha Odonto",
+		"client_cnpj": "11222333000181",
+		"client_address": "Av. Afonso Pena, 1500, Campo Grande/MS",
+		"client_rep_name": "Dr. Roberto",
+		"client_email": "roberto@alpha.com.br",
+		"client_phone": "(67) 99999-1111",
+		"setup_fee_cents": 150000,
+		"has_monthly_fee": true,
+		"monthly_fee_cents": 250000,
+		"due_day": 10,
+		"start_date": "2026-11-22",
+		"city_forum": "Campo Grande/MS",
+		"escopo_marketing": {
+			"ciclo_estrategico_dias": 90,
+			"posicionamento_editorial": true,
+			"conteudo_organico": true,
+			"link_multicanal": true,
+			"trafego_pago": true,
+			"captacao_leads": true,
+			"qtd_imagens": 4,
+			"freq_imagens": "semanais",
+			"qtd_reels": 3,
+			"freq_reels": "semanais",
+			"direcionamento_stories": true,
+			"horas_gravacao_semanal": 1,
+			"canais": ["WhatsApp", "Instagram", "Facebook", "Google", "TikTok"]
+		}
+	}`
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/contracts", bytes.NewBufferString(mktFullPayload)))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("POST marketing full failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var mktFull domain.Contract
+	if err := json.Unmarshal(rec.Body.Bytes(), &mktFull); err != nil {
+		t.Fatalf("decode mktFull: %v", err)
+	}
+	if mktFull.ModeloContrato != domain.ModeloMarketingIAInfinito {
+		t.Fatalf("expected modelo_contrato=%q, got %q", domain.ModeloMarketingIAInfinito, mktFull.ModeloContrato)
+	}
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/contracts/"+mktFull.ID+"/pdf", nil))
+	if rec.Code != http.StatusOK || !bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
+		t.Fatalf("GET marketing full PDF failed: code=%d len=%d", rec.Code, rec.Body.Len())
+	}
+
+	// 10. Modelo Marketing IA Infinito Parcial (sem tráfego pago, setup=0, 8 imagens mensais, 0 Reels) -> Create + PDF generation
+	mktPartialPayload := `{
+		"modelo_contrato": "marketing_ia_infinito",
+		"client_company_name": "Loja Beta Ltda",
+		"client_cnpj": "11222333000181",
+		"client_address": "Rua 14 de Julho, 500, Campo Grande/MS",
+		"client_rep_name": "Fernanda Lima",
+		"client_email": "fernanda@beta.com.br",
+		"client_phone": "(67) 99999-2222",
+		"setup_fee_cents": 0,
+		"has_monthly_fee": true,
+		"monthly_fee_cents": 180000,
+		"due_day": 15,
+		"start_date": "2026-11-22",
+		"city_forum": "Campo Grande/MS",
+		"escopo_marketing": {
+			"ciclo_estrategico_dias": 90,
+			"posicionamento_editorial": true,
+			"conteudo_organico": true,
+			"link_multicanal": true,
+			"trafego_pago": false,
+			"captacao_leads": true,
+			"qtd_imagens": 8,
+			"freq_imagens": "mensais",
+			"qtd_reels": 0,
+			"freq_reels": "semanais",
+			"direcionamento_stories": false,
+			"horas_gravacao_semanal": 1,
+			"canais": ["WhatsApp", "Instagram"]
+		}
+	}`
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/contracts", bytes.NewBufferString(mktPartialPayload)))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("POST marketing partial failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var mktPartial domain.Contract
+	if err := json.Unmarshal(rec.Body.Bytes(), &mktPartial); err != nil {
+		t.Fatalf("decode mktPartial: %v", err)
+	}
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/contracts/"+mktPartial.ID+"/pdf", nil))
+	if rec.Code != http.StatusOK || !bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
+		t.Fatalf("GET marketing partial PDF failed: code=%d len=%d", rec.Code, rec.Body.Len())
+	}
 }

@@ -22,8 +22,87 @@ const (
 	StatusCanceled      ContractStatus = "CANCELED"
 )
 
+const (
+	ModeloPadrao              = "padrao"
+	ModeloMarketingIAInfinito = "marketing_ia_infinito"
+)
+
+// EscopoMarketing holds the dynamic scope configuration for the marketing_ia_infinito contract template.
+type EscopoMarketing struct {
+	CicloEstrategicoDias int `json:"ciclo_estrategico_dias"`
+
+	PosicionamentoEditorial bool `json:"posicionamento_editorial"`
+	ConteudoOrganico        bool `json:"conteudo_organico"`
+	LinkMulticanal          bool `json:"link_multicanal"`
+	TrafegoPago             bool `json:"trafego_pago"`
+	CaptacaoLeads           bool `json:"captacao_leads"`
+
+	QtdImagens            int    `json:"qtd_imagens"`
+	FreqImagens           string `json:"freq_imagens"`
+	QtdReels              int    `json:"qtd_reels"`
+	FreqReels             string `json:"freq_reels"`
+	DirecionamentoStories bool   `json:"direcionamento_stories"`
+	HorasGravacaoSemanal  int    `json:"horas_gravacao_semanal"`
+
+	Canais []string `json:"canais"`
+}
+
+// DefaultEscopoMarketing returns the default full-scope configuration for IA Infinito Marketing & Traffic contracts.
+func DefaultEscopoMarketing() EscopoMarketing {
+	return EscopoMarketing{
+		CicloEstrategicoDias:    90,
+		PosicionamentoEditorial: true,
+		ConteudoOrganico:        true,
+		LinkMulticanal:          true,
+		TrafegoPago:             true,
+		CaptacaoLeads:           true,
+		QtdImagens:              0,
+		FreqImagens:             "semanais",
+		QtdReels:                3,
+		FreqReels:               "semanais",
+		DirecionamentoStories:   true,
+		HorasGravacaoSemanal:    1,
+		Canais:                  []string{"WhatsApp", "Instagram", "Facebook", "Google", "TikTok"},
+	}
+}
+
+// Normalize sanitizes numeric bounds, frequencies, and channel lists.
+func (e *EscopoMarketing) Normalize() {
+	if e.CicloEstrategicoDias <= 0 {
+		e.CicloEstrategicoDias = 90
+	}
+	if e.QtdImagens < 0 {
+		e.QtdImagens = 0
+	}
+	if e.FreqImagens != "semanais" && e.FreqImagens != "mensais" {
+		e.FreqImagens = "semanais"
+	}
+	if e.QtdReels < 0 {
+		e.QtdReels = 0
+	}
+	if e.FreqReels != "semanais" && e.FreqReels != "mensais" {
+		e.FreqReels = "semanais"
+	}
+	if e.HorasGravacaoSemanal < 0 {
+		e.HorasGravacaoSemanal = 0
+	}
+	var cleaned []string
+	seen := make(map[string]bool)
+	for _, ch := range e.Canais {
+		t := strings.TrimSpace(ch)
+		if t != "" && !seen[t] {
+			seen[t] = true
+			cleaned = append(cleaned, t)
+		}
+	}
+	e.Canais = cleaned
+}
+
 // ContractInput represents the user-submitted payload for previewing, creating, or updating a contract.
 type ContractInput struct {
+	ModeloContrato  string           `json:"modelo_contrato,omitempty"`
+	EscopoMarketing *EscopoMarketing `json:"escopo_marketing,omitempty"`
+
 	ClientCompanyName      string `json:"client_company_name"`
 	ClientTradeName        string `json:"client_trade_name,omitempty"`
 	ClientCNPJ             string `json:"client_cnpj"`
@@ -80,9 +159,11 @@ type Contract struct {
 	PayOnSignature            bool           `json:"pay_on_signature"`
 	IncludeWitnesses          bool           `json:"include_witnesses"`
 	DueDay                    int            `json:"due_day"`
-	StartDate         string         `json:"start_date"`
-	CityForum         string         `json:"city_forum"`
-	PayloadJSON       string         `json:"payload_json"`
+	StartDate                 string         `json:"start_date"`
+	CityForum                 string         `json:"city_forum"`
+	ModeloContrato            string         `json:"modelo_contrato"`
+	EscopoJSON                string         `json:"escopo_json"`
+	PayloadJSON               string         `json:"payload_json"`
 	S3Bucket          string         `json:"s3_bucket,omitempty"`
 	S3Key             string         `json:"s3_key,omitempty"`
 	PDFHashSHA256     string         `json:"pdf_hash_sha256,omitempty"`
@@ -136,6 +217,11 @@ func (in *ContractInput) Validate(requireStrict bool) error {
 	}
 	if in.DueDay != 0 && (in.DueDay < 1 || in.DueDay > 31) {
 		return errors.New("dia de vencimento deve estar entre 1 e 31")
+	}
+	if requireStrict && in.ModeloContrato == ModeloMarketingIAInfinito {
+		if !in.EffectiveHasMonthlyFee() || in.MonthlyFeeCents <= 0 {
+			return errors.New("valor da mensalidade recorrente é obrigatório para o modelo Marketing IA Infinito")
+		}
 	}
 	return nil
 }
@@ -235,6 +321,16 @@ func (in *ContractInput) EffectiveSetupPaymentMethod() string {
 
 // Normalize cleans and applies defaults to ContractInput.
 func (in *ContractInput) Normalize(defaultForum string) {
+	if strings.TrimSpace(in.ModeloContrato) != ModeloMarketingIAInfinito {
+		in.ModeloContrato = ModeloPadrao
+	} else {
+		in.ModeloContrato = ModeloMarketingIAInfinito
+		if in.EscopoMarketing == nil {
+			def := DefaultEscopoMarketing()
+			in.EscopoMarketing = &def
+		}
+		in.EscopoMarketing.Normalize()
+	}
 	in.ClientCompanyName = strings.TrimSpace(in.ClientCompanyName)
 	in.ClientTradeName = strings.TrimSpace(in.ClientTradeName)
 	in.ClientCNPJ = OnlyDigits(in.ClientCNPJ)
@@ -411,6 +507,11 @@ func CentsToExtenso(cents int64) string {
 	}
 
 	return strings.Join(parts, " e ")
+}
+
+// NumberToPortuguese converts a non-negative integer into Portuguese words (e.g., 90 -> "noventa").
+func NumberToPortuguese(n int64) string {
+	return numberToPortuguese(n)
 }
 
 func numberToPortuguese(n int64) string {

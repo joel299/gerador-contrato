@@ -87,6 +87,8 @@ func ensureCommercialColumns(db *sql.DB) error {
 		{"setup_installment_value_cents", "ALTER TABLE contracts ADD COLUMN setup_installment_value_cents INTEGER NOT NULL DEFAULT 0;"},
 		{"pay_on_signature", "ALTER TABLE contracts ADD COLUMN pay_on_signature INTEGER NOT NULL DEFAULT 1;"},
 		{"include_witnesses", "ALTER TABLE contracts ADD COLUMN include_witnesses INTEGER NOT NULL DEFAULT 1;"},
+		{"modelo_contrato", "ALTER TABLE contracts ADD COLUMN modelo_contrato TEXT NOT NULL DEFAULT 'padrao';"},
+		{"escopo_json", "ALTER TABLE contracts ADD COLUMN escopo_json TEXT NOT NULL DEFAULT '{}';"},
 	}
 	for _, a := range additions {
 		if !existing[a.col] {

@@ -61,6 +61,12 @@ func (r *ContractRepository) Create(ctx context.Context, c *domain.Contract) err
 	if c.SetupPaymentMethod == "" {
 		c.SetupPaymentMethod = "pix"
 	}
+	if c.ModeloContrato == "" {
+		c.ModeloContrato = domain.ModeloPadrao
+	}
+	if c.EscopoJSON == "" {
+		c.EscopoJSON = "{}"
+	}
 
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO contracts (
@@ -69,13 +75,15 @@ func (r *ContractRepository) Create(ctx context.Context, c *domain.Contract) err
 			setup_fee_cents, setup_installments, setup_payment_method, setup_total_final_cents, setup_installment_value_cents,
 			has_monthly_fee, monthly_fee_cents, pay_on_signature, include_witnesses,
 			due_day, start_date, city_forum,
+			modelo_contrato, escopo_json,
 			payload_json, s3_bucket, s3_key, pdf_hash_sha256, status, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		c.ID, c.Code, c.ClientCompanyName, c.ClientTradeName, c.ClientCNPJ,
 		c.ClientAddress, c.ClientRepName, c.ClientRepDocument, c.ClientEmail, c.ClientPhone,
 		c.SetupFeeCents, c.SetupInstallments, c.SetupPaymentMethod, c.SetupTotalFinalCents, c.SetupInstallmentValueCents,
 		boolToInt(c.HasMonthlyFee), c.MonthlyFeeCents, boolToInt(c.PayOnSignature), boolToInt(c.IncludeWitnesses),
 		c.DueDay, c.StartDate, c.CityForum,
+		c.ModeloContrato, c.EscopoJSON,
 		c.PayloadJSON, c.S3Bucket, c.S3Key, c.PDFHashSHA256, string(c.Status), c.CreatedAt, c.UpdatedAt,
 	)
 	if err != nil {
@@ -88,6 +96,12 @@ func (r *ContractRepository) Update(ctx context.Context, c *domain.Contract) err
 	c.UpdatedAt = time.Now().UTC()
 	if c.SetupInstallments < 1 {
 		c.SetupInstallments = 1
+	}
+	if c.ModeloContrato == "" {
+		c.ModeloContrato = domain.ModeloPadrao
+	}
+	if c.EscopoJSON == "" {
+		c.EscopoJSON = "{}"
 	}
 	res, err := r.db.ExecContext(ctx, `
 		UPDATE contracts SET
@@ -111,6 +125,8 @@ func (r *ContractRepository) Update(ctx context.Context, c *domain.Contract) err
 			due_day = ?,
 			start_date = ?,
 			city_forum = ?,
+			modelo_contrato = ?,
+			escopo_json = ?,
 			payload_json = ?,
 			status = ?,
 			updated_at = ?
@@ -120,6 +136,7 @@ func (r *ContractRepository) Update(ctx context.Context, c *domain.Contract) err
 		c.SetupFeeCents, c.SetupInstallments, c.SetupPaymentMethod, c.SetupTotalFinalCents, c.SetupInstallmentValueCents,
 		boolToInt(c.HasMonthlyFee), c.MonthlyFeeCents, boolToInt(c.PayOnSignature), boolToInt(c.IncludeWitnesses),
 		c.DueDay, c.StartDate, c.CityForum,
+		c.ModeloContrato, c.EscopoJSON,
 		c.PayloadJSON, string(c.Status), c.UpdatedAt, c.ID,
 	)
 	if err != nil {
@@ -160,6 +177,7 @@ func (r *ContractRepository) GetByID(ctx context.Context, id string) (*domain.Co
 		       setup_fee_cents, setup_installments, COALESCE(setup_payment_method, 'pix'), setup_total_final_cents, setup_installment_value_cents,
 		       has_monthly_fee, monthly_fee_cents, pay_on_signature, include_witnesses,
 		       due_day, start_date, city_forum,
+		       COALESCE(modelo_contrato, 'padrao'), COALESCE(escopo_json, '{}'),
 		       payload_json, COALESCE(s3_bucket, ''), COALESCE(s3_key, ''), COALESCE(pdf_hash_sha256, ''),
 		       status, created_at, updated_at
 		FROM contracts WHERE id = ?`, id)
@@ -212,6 +230,7 @@ func (r *ContractRepository) List(ctx context.Context, query, status string, lim
 		       setup_fee_cents, setup_installments, COALESCE(setup_payment_method, 'pix'), setup_total_final_cents, setup_installment_value_cents,
 		       has_monthly_fee, monthly_fee_cents, pay_on_signature, include_witnesses,
 		       due_day, start_date, city_forum,
+		       COALESCE(modelo_contrato, 'padrao'), COALESCE(escopo_json, '{}'),
 		       payload_json, COALESCE(s3_bucket, ''), COALESCE(s3_key, ''), COALESCE(pdf_hash_sha256, ''),
 		       status, created_at, updated_at
 		FROM contracts`
@@ -258,6 +277,7 @@ func scanContract(s scanner) (*domain.Contract, error) {
 		&c.SetupFeeCents, &c.SetupInstallments, &c.SetupPaymentMethod, &c.SetupTotalFinalCents, &c.SetupInstallmentValueCents,
 		&hasMonthly, &c.MonthlyFeeCents, &payOnSig, &includeWitnesses,
 		&c.DueDay, &c.StartDate, &c.CityForum,
+		&c.ModeloContrato, &c.EscopoJSON,
 		&c.PayloadJSON, &c.S3Bucket, &c.S3Key, &c.PDFHashSHA256,
 		&status, &c.CreatedAt, &c.UpdatedAt,
 	)
