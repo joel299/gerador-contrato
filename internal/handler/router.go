@@ -46,6 +46,7 @@ func NewRouter(
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(b)
 	})
@@ -69,6 +70,7 @@ func NewRouter(
 			return
 		}
 		w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.Header().Set("Service-Worker-Allowed", "/")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(b)

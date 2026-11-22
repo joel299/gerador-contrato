@@ -734,18 +734,10 @@
             </div>
           </section>
 
-          <!-- SEÇÃO 3: ESCOPO E SERVIÇOS CONTRATADOS -->
+          <!-- SEÇÃO 3: ESCOPO E ENTREGAS DO CONTRATO (PERÍODO DE 90 DIAS) -->
           <section class="form-section" id="scopeSection">
-            <h2 class="form-section-title">3. Escopo e Serviços Contratados</h2>
+            <h2 class="form-section-title">3. Escopo e Entregas (Ciclo de 90 Dias)</h2>
             <div class="field-grid">
-              <div class="field full">
-                <label class="toggle-row" for="mkt_servicos_base">
-                  <input id="mkt_servicos_base" type="checkbox">
-                  <span>Serviços Base / Tecnologia (automação, sistemas e implantação)</span>
-                </label>
-                <p class="microcopy">Implantação, integração de sistemas, automações operacionais e suporte técnico.</p>
-              </div>
-
               <div class="field full">
                 <label class="toggle-row" for="mkt_posicionamento">
                   <input id="mkt_posicionamento" type="checkbox" checked>
@@ -757,32 +749,22 @@
               <div class="field full">
                 <label class="toggle-row" for="mkt_conteudo">
                   <input id="mkt_conteudo" type="checkbox" checked>
-                  <span>Produção de Conteúdo Orgânico</span>
+                  <span>Produção de Conteúdo Orgânico (Imagens e Vídeos)</span>
                 </label>
                 <div class="sub-group" id="mktConteudoSub">
                   <div class="field">
-                    <label for="mkt_qtd_imagens">Imagens / Artes Estáticas</label>
+                    <label for="mkt_qtd_imagens">Imagens / Artes (total em 90 dias)</label>
                     <div class="inline-pair">
-                      <input class="control" id="mkt_qtd_imagens" type="number" min="0" max="200" value="0" inputmode="numeric">
-                      <select class="control" id="mkt_freq_imagens">
-                        <option value="semanais" selected>semanais</option>
-                        <option value="mensais">mensais</option>
-                      </select>
+                      <input class="control" id="mkt_qtd_imagens" type="number" min="0" max="500" value="12" inputmode="numeric">
+                      <input class="control" id="mkt_obs_imagens" type="text" value="4 por mês" placeholder="Ex.: 4 por mês">
                     </div>
                   </div>
                   <div class="field">
-                    <label for="mkt_qtd_reels">Reels / Vídeos Curtos</label>
+                    <label for="mkt_qtd_reels">Vídeos / Reels (total em 90 dias)</label>
                     <div class="inline-pair">
-                      <input class="control" id="mkt_qtd_reels" type="number" min="0" max="200" value="3" inputmode="numeric">
-                      <select class="control" id="mkt_freq_reels">
-                        <option value="semanais" selected>semanais</option>
-                        <option value="mensais">mensais</option>
-                      </select>
+                      <input class="control" id="mkt_qtd_reels" type="number" min="0" max="500" value="36" inputmode="numeric">
+                      <input class="control" id="mkt_obs_gravacao" type="text" value="1h/semana em bloco" placeholder="Ex.: 1h/semana em bloco">
                     </div>
-                  </div>
-                  <div class="field">
-                    <label for="mkt_horas_gravacao">Horas de Gravação em Bloco (por semana)</label>
-                    <input class="control" id="mkt_horas_gravacao" type="number" min="0" max="20" value="1" inputmode="numeric">
                   </div>
                   <label class="toggle-row" for="mkt_stories">
                     <input id="mkt_stories" type="checkbox" checked>
@@ -810,9 +792,25 @@
               <div class="field full">
                 <label class="toggle-row" for="mkt_trafego_pago">
                   <input id="mkt_trafego_pago" type="checkbox" checked>
-                  <span>Gestão e Investimento em Tráfego Pago (Risco Contratada)</span>
+                  <span>Gestão de Tráfego Pago</span>
                 </label>
-                <p class="microcopy">Assunção integral do investimento em mídia pela IA Infinito sem verba extra.</p>
+                <div class="sub-group" id="mktTrafegoSub">
+                  <div class="field">
+                    <label for="mkt_modalidade_trafego">Modalidade do Tráfego Pago</label>
+                    <select class="control" id="mkt_modalidade_trafego">
+                      <option value="risco_contratada" selected>Investimento e Risco Integral pela Contratada (IA Infinito)</option>
+                      <option value="verba_cliente">Gestão Estratégica com Verba Custeada pelo Cliente</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Plataformas de Anúncios Habilitadas</label>
+                    <div class="channel-list">
+                      <label class="toggle-row"><input type="checkbox" name="mkt_plataforma_ads" value="Meta Ads (Instagram/Facebook)" checked><span>Meta Ads (Instagram/Facebook)</span></label>
+                      <label class="toggle-row"><input type="checkbox" name="mkt_plataforma_ads" value="Google Ads" checked><span>Google Ads</span></label>
+                      <label class="toggle-row"><input type="checkbox" name="mkt_plataforma_ads" value="TikTok Ads" checked><span>TikTok Ads</span></label>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="field full">
@@ -820,11 +818,19 @@
                   <input id="mkt_captacao_leads" type="checkbox" checked>
                   <span>Captação e Encaminhamento de Leads</span>
                 </label>
-                <p class="microcopy">Fluxo de captação e relatório mensal de performance.</p>
+                <p class="microcopy">Fluxo comercial e relatório mensal de performance.</p>
+              </div>
+
+              <div class="field full">
+                <label class="toggle-row" for="mkt_servicos_base">
+                  <input id="mkt_servicos_base" type="checkbox">
+                  <span>Automação / IA / Sistemas Sob Medida</span>
+                </label>
+                <p class="microcopy">Implantação, integração de sistemas, soluções com IA e automações operacionais.</p>
               </div>
 
               <div class="field full" id="mktCicloField">
-                <label for="mkt_ciclo_dias">Ciclo Estratégico Inicial (dias)</label>
+                <label for="mkt_ciclo_dias">Ciclo Estratégico (dias)</label>
                 <input class="control" id="mkt_ciclo_dias" type="number" min="15" max="365" value="90" inputmode="numeric">
                 <p class="microcopy">Padrão de 90 dias dividido em 3 fases no Anexo I.</p>
               </div>
@@ -1135,16 +1141,18 @@
       const mktConteudoEl = document.getElementById('mkt_conteudo');
       const mktConteudoSubEl = document.getElementById('mktConteudoSub');
       const mktQtdImagensEl = document.getElementById('mkt_qtd_imagens');
-      const mktFreqImagensEl = document.getElementById('mkt_freq_imagens');
+      const mktObsImagensEl = document.getElementById('mkt_obs_imagens');
       const mktQtdReelsEl = document.getElementById('mkt_qtd_reels');
-      const mktFreqReelsEl = document.getElementById('mkt_freq_reels');
-      const mktHorasGravacaoEl = document.getElementById('mkt_horas_gravacao');
+      const mktObsGravacaoEl = document.getElementById('mkt_obs_gravacao');
       const mktStoriesEl = document.getElementById('mkt_stories');
       const mktLinkMulticanalEl = document.getElementById('mkt_link_multicanal');
       const mktCanaisSubEl = document.getElementById('mktCanaisSub');
       const mktTrafegoPagoEl = document.getElementById('mkt_trafego_pago');
+      const mktTrafegoSubEl = document.getElementById('mktTrafegoSub');
+      const mktModalidadeTrafegoEl = document.getElementById('mkt_modalidade_trafego');
       const mktCaptacaoLeadsEl = document.getElementById('mkt_captacao_leads');
       const getCanalCheckboxes = () => Array.from(document.querySelectorAll('input[name="mkt_canal"]'));
+      const getAdsPlatformCheckboxes = () => Array.from(document.querySelectorAll('input[name="mkt_plataforma_ads"]'));
 
       const cnpjEl = document.getElementById('client_cnpj');
       const tradeNameEl = document.getElementById('client_trade_name');
@@ -1163,6 +1171,7 @@
       const syncScopeUI = () => {
         mktConteudoSubEl.hidden = !mktConteudoEl.checked;
         mktCanaisSubEl.hidden = !mktLinkMulticanalEl.checked;
+        mktTrafegoSubEl.hidden = !mktTrafegoPagoEl.checked;
         const hasAnexoServices = mktPosicionamentoEl.checked || mktConteudoEl.checked || mktLinkMulticanalEl.checked || mktTrafegoPagoEl.checked || mktCaptacaoLeadsEl.checked;
         mktCicloFieldEl.hidden = !hasAnexoServices;
       };
@@ -1172,15 +1181,16 @@
         mktCicloDiasEl.value = 90;
         mktPosicionamentoEl.checked = true;
         mktConteudoEl.checked = true;
-        mktQtdImagensEl.value = 0;
-        mktFreqImagensEl.value = 'semanais';
-        mktQtdReelsEl.value = 3;
-        mktFreqReelsEl.value = 'semanais';
-        mktHorasGravacaoEl.value = 1;
+        mktQtdImagensEl.value = 12;
+        mktObsImagensEl.value = '4 por mês';
+        mktQtdReelsEl.value = 36;
+        mktObsGravacaoEl.value = '1h/semana em bloco';
         mktStoriesEl.checked = true;
         mktLinkMulticanalEl.checked = true;
         getCanalCheckboxes().forEach(cb => { cb.checked = true; });
         mktTrafegoPagoEl.checked = true;
+        mktModalidadeTrafegoEl.value = 'risco_contratada';
+        getAdsPlatformCheckboxes().forEach(cb => { cb.checked = true; });
         mktCaptacaoLeadsEl.checked = true;
       };
 
@@ -1193,16 +1203,18 @@
         mktCicloDiasEl.value = escopo.ciclo_estrategico_dias > 0 ? escopo.ciclo_estrategico_dias : 90;
         mktPosicionamentoEl.checked = escopo.posicionamento_editorial !== false;
         mktConteudoEl.checked = escopo.conteudo_organico !== false;
-        mktQtdImagensEl.value = Number.isFinite(escopo.qtd_imagens) ? escopo.qtd_imagens : 0;
-        mktFreqImagensEl.value = escopo.freq_imagens === 'mensais' ? 'mensais' : 'semanais';
-        mktQtdReelsEl.value = Number.isFinite(escopo.qtd_reels) ? escopo.qtd_reels : 3;
-        mktFreqReelsEl.value = escopo.freq_reels === 'mensais' ? 'mensais' : 'semanais';
-        mktHorasGravacaoEl.value = Number.isFinite(escopo.horas_gravacao_semanal) ? escopo.horas_gravacao_semanal : 1;
+        mktQtdImagensEl.value = Number.isFinite(escopo.qtd_imagens) ? escopo.qtd_imagens : 12;
+        mktObsImagensEl.value = typeof escopo.obs_imagens === 'string' ? escopo.obs_imagens : '';
+        mktQtdReelsEl.value = Number.isFinite(escopo.qtd_reels) ? escopo.qtd_reels : 36;
+        mktObsGravacaoEl.value = typeof escopo.obs_gravacao === 'string' ? escopo.obs_gravacao : '1h/semana em bloco';
         mktStoriesEl.checked = escopo.direcionamento_stories !== false;
         mktLinkMulticanalEl.checked = escopo.link_multicanal !== false;
         const canaisSet = new Set(Array.isArray(escopo.canais) ? escopo.canais : ['WhatsApp', 'Instagram', 'Facebook', 'Google', 'TikTok']);
         getCanalCheckboxes().forEach(cb => { cb.checked = canaisSet.has(cb.value); });
         mktTrafegoPagoEl.checked = escopo.trafego_pago !== false;
+        mktModalidadeTrafegoEl.value = escopo.modalidade_trafego === 'verba_cliente' ? 'verba_cliente' : 'risco_contratada';
+        const adsSet = new Set(Array.isArray(escopo.plataformas_ads) && escopo.plataformas_ads.length > 0 ? escopo.plataformas_ads : ['Meta Ads (Instagram/Facebook)', 'Google Ads', 'TikTok Ads']);
+        getAdsPlatformCheckboxes().forEach(cb => { cb.checked = adsSet.has(cb.value); });
         mktCaptacaoLeadsEl.checked = escopo.captacao_leads !== false;
       };
 
@@ -1213,13 +1225,15 @@
         conteudo_organico: mktConteudoEl.checked,
         link_multicanal: mktLinkMulticanalEl.checked,
         trafego_pago: mktTrafegoPagoEl.checked,
+        modalidade_trafego: mktModalidadeTrafegoEl.value === 'verba_cliente' ? 'verba_cliente' : 'risco_contratada',
+        plataformas_ads: getAdsPlatformCheckboxes().filter(cb => cb.checked).map(cb => cb.value),
         captacao_leads: mktCaptacaoLeadsEl.checked,
         qtd_imagens: Math.max(0, parseInt(mktQtdImagensEl.value || '0', 10) || 0),
-        freq_imagens: mktFreqImagensEl.value || 'semanais',
+        obs_imagens: mktObsImagensEl.value.trim(),
         qtd_reels: Math.max(0, parseInt(mktQtdReelsEl.value || '0', 10) || 0),
-        freq_reels: mktFreqReelsEl.value || 'semanais',
+        obs_gravacao: mktObsGravacaoEl.value.trim(),
         direcionamento_stories: mktStoriesEl.checked,
-        horas_gravacao_semanal: Math.max(0, parseInt(mktHorasGravacaoEl.value || '0', 10) || 0),
+        horas_gravacao_semanal: 1,
         canais: getCanalCheckboxes().filter(cb => cb.checked).map(cb => cb.value)
       });
 

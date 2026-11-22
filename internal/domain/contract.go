@@ -23,8 +23,12 @@ const (
 )
 
 const (
-	ModeloPadrao              = "padrao"
-	ModeloMarketingIAInfinito = "marketing_ia_infinito"
+	ModeloPadrao = "padrao"
+)
+
+const (
+	TrafegoRiscoContratada = "risco_contratada"
+	TrafegoVerbaCliente    = "verba_cliente"
 )
 
 // EscopoMarketing holds the dynamic scope configuration for the unified IA Infinito contract.
@@ -39,11 +43,16 @@ type EscopoMarketing struct {
 	CaptacaoLeads           bool `json:"captacao_leads"`
 
 	QtdImagens            int    `json:"qtd_imagens"`
-	FreqImagens           string `json:"freq_imagens"`
+	ObsImagens            string `json:"obs_imagens,omitempty"`
+	FreqImagens           string `json:"freq_imagens,omitempty"`
 	QtdReels              int    `json:"qtd_reels"`
-	FreqReels             string `json:"freq_reels"`
+	ObsGravacao           string `json:"obs_gravacao,omitempty"`
+	FreqReels             string `json:"freq_reels,omitempty"`
 	DirecionamentoStories bool   `json:"direcionamento_stories"`
 	HorasGravacaoSemanal  int    `json:"horas_gravacao_semanal"`
+
+	ModalidadeTrafego string   `json:"modalidade_trafego"`
+	PlataformasAds    []string `json:"plataformas_ads"`
 
 	Canais []string `json:"canais"`
 }
@@ -58,17 +67,19 @@ func DefaultEscopoMarketing() EscopoMarketing {
 		LinkMulticanal:          true,
 		TrafegoPago:             true,
 		CaptacaoLeads:           true,
-		QtdImagens:              0,
-		FreqImagens:             "semanais",
-		QtdReels:                3,
-		FreqReels:               "semanais",
+		QtdImagens:              12,
+		ObsImagens:              "4 por mês",
+		QtdReels:                36,
+		ObsGravacao:             "1h/semana em bloco",
 		DirecionamentoStories:   true,
 		HorasGravacaoSemanal:    1,
+		ModalidadeTrafego:       TrafegoRiscoContratada,
+		PlataformasAds:          []string{"Meta Ads (Instagram/Facebook)", "Google Ads", "TikTok Ads"},
 		Canais:                  []string{"WhatsApp", "Facebook", "Instagram", "Google", "TikTok"},
 	}
 }
 
-// Normalize sanitizes numeric bounds, frequencies, and channel lists.
+// Normalize sanitizes numeric bounds, traffic mode, platforms, and channel lists.
 func (e *EscopoMarketing) Normalize() {
 	if e.CicloEstrategicoDias <= 0 {
 		e.CicloEstrategicoDias = 90
@@ -76,28 +87,35 @@ func (e *EscopoMarketing) Normalize() {
 	if e.QtdImagens < 0 {
 		e.QtdImagens = 0
 	}
-	if e.FreqImagens != "semanais" && e.FreqImagens != "mensais" {
-		e.FreqImagens = "semanais"
-	}
+	e.ObsImagens = strings.TrimSpace(e.ObsImagens)
 	if e.QtdReels < 0 {
 		e.QtdReels = 0
 	}
-	if e.FreqReels != "semanais" && e.FreqReels != "mensais" {
-		e.FreqReels = "semanais"
-	}
+	e.ObsGravacao = strings.TrimSpace(e.ObsGravacao)
 	if e.HorasGravacaoSemanal < 0 {
 		e.HorasGravacaoSemanal = 0
 	}
+	if e.ModalidadeTrafego != TrafegoVerbaCliente {
+		e.ModalidadeTrafego = TrafegoRiscoContratada
+	}
+	e.PlataformasAds = dedupTrimmedStrings(e.PlataformasAds)
+	if e.TrafegoPago && len(e.PlataformasAds) == 0 {
+		e.PlataformasAds = []string{"Meta Ads (Instagram/Facebook)", "Google Ads", "TikTok Ads"}
+	}
+	e.Canais = dedupTrimmedStrings(e.Canais)
+}
+
+func dedupTrimmedStrings(items []string) []string {
 	var cleaned []string
 	seen := make(map[string]bool)
-	for _, ch := range e.Canais {
-		t := strings.TrimSpace(ch)
+	for _, item := range items {
+		t := strings.TrimSpace(item)
 		if t != "" && !seen[t] {
 			seen[t] = true
 			cleaned = append(cleaned, t)
 		}
 	}
-	e.Canais = cleaned
+	return cleaned
 }
 
 // ContractInput represents the user-submitted payload for previewing, creating, or updating a contract.

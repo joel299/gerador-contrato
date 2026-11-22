@@ -368,10 +368,15 @@
         <td>PARTICIPAÇÃO DA CONTRATANTE</td>
         <td>{{.ClientParticipationText}}</td>
       </tr>
-      {{if .Escopo.TrafegoPago}}
+      {{if .IsTrafegoRiscoContratada}}
       <tr>
         <td>TRÁFEGO PAGO E RISCO</td>
-        <td>Operação e investimento financeiro em mídia paga integralmente assumidos pela CONTRATADA (IA Infinito), ficando todo o risco operacional e financeiro dos anúncios sob responsabilidade exclusiva da CONTRATADA, sem custo adicional de verba de mídia para a CONTRATANTE.</td>
+        <td>Operação e investimento financeiro em mídia paga integralmente assumidos pela CONTRATADA (IA Infinito) nas plataformas <strong>{{.PlataformasAdsFormatted}}</strong>, ficando todo o risco operacional e financeiro dos anúncios sob responsabilidade exclusiva da CONTRATADA, sem custo adicional de verba de mídia para a CONTRATANTE.</td>
+      </tr>
+      {{else if .IsTrafegoVerbaCliente}}
+      <tr>
+        <td>TRÁFEGO PAGO E MÍDIA</td>
+        <td>Gestão estratégica, criação e otimização de campanhas pela CONTRATADA (IA Infinito) nas plataformas <strong>{{.PlataformasAdsFormatted}}</strong>, com verba de anúncios custeada diretamente pela CONTRATANTE às plataformas.</td>
       </tr>
       {{end}}
       <tr>
@@ -405,7 +410,7 @@
     <p class="clause-item">O escopo da operação compreende, de forma integrada:</p>
     <ul class="clause-list">
       {{if .Escopo.ServicosBaseTecnologia}}
-      <li><strong>Serviços Base, Tecnologia e Automação:</strong> Implantação, configuração, integração de sistemas, automações operacionais e suporte técnico contínuo conforme alinhamento entre as partes.</li>
+      <li><strong>Automação, IA e Sistemas Sob Medida:</strong> Implantação, configuração, integração de sistemas, soluções com inteligência artificial, automações operacionais e suporte técnico conforme alinhamento entre as partes.</li>
       {{end}}
       {{if .Escopo.PosicionamentoEditorial}}
       <li><strong>Posicionamento e Linha Editorial:</strong> Estruturação da comunicação institucional e comercial da CONTRATANTE para uma presença clara, consultiva e orientada à geração de negócios, respeitando a identidade da marca.</li>
@@ -416,8 +421,10 @@
       {{if .Escopo.ConteudoOrganico}}
       <li><strong>Planejamento e Produção de Conteúdo Orgânico:</strong> Elaboração de calendário editorial, pautas, roteiros, textos de apoio, orientação de gravação, edição e publicação dos conteúdos previstos no Anexo I.</li>
       {{end}}
-      {{if .Escopo.TrafegoPago}}
-      <li><strong>Tráfego Pago com Investimento e Risco da Contratada:</strong> Planejamento, criação, gestão, otimização e custeio integral da verba de mídia paga nas plataformas aprovadas, assumindo a CONTRATADA todo o investimento financeiro e o risco operacional das campanhas patrocinadas.</li>
+      {{if .IsTrafegoRiscoContratada}}
+      <li><strong>Tráfego Pago com Investimento e Risco da Contratada:</strong> Planejamento, criação, gestão, otimização e custeio integral da verba de mídia paga nas plataformas <strong>{{.PlataformasAdsFormatted}}</strong>, assumindo a CONTRATADA todo o investimento financeiro e o risco operacional das campanhas patrocinadas.</li>
+      {{else if .IsTrafegoVerbaCliente}}
+      <li><strong>Gestão Estratégica de Tráfego Pago (Verba da Contratante):</strong> Planejamento, criação, segmentação e otimização contínua das campanhas nas plataformas <strong>{{.PlataformasAdsFormatted}}</strong>, sendo a verba de anúncios custeada diretamente pela CONTRATANTE às plataformas.</li>
       {{end}}
       {{if .Escopo.CaptacaoLeads}}
       <li><strong>Captação e Encaminhamento de Leads:</strong> Estruturação do fluxo de captação e encaminhamento de oportunidades comerciais até os canais de atendimento (como WhatsApp e formulários) e equipe comercial da CONTRATANTE, com relatório mensal de performance.</li>
@@ -446,15 +453,21 @@
     <p class="clause-item">Estão incluídas até 2 (duas) rodadas consolidadas de ajustes por entrega antes da aprovação definitiva. Solicitações que impliquem alteração integral de escopo ou mudança de briefing após a aprovação serão tratadas como demanda adicional.</p>
     <p class="clause-item">A aprovação expressa da CONTRATANTE atesta a exatidão das informações comerciais, técnicas, institucionais e regulatórias aplicáveis ao seu segmento de atuação.</p>
 
-    {{if .Escopo.TrafegoPago}}
+    {{if .IsTrafegoRiscoContratada}}
     <!-- TRÁFEGO PAGO E ASSUNÇÃO DE RISCO PELA CONTRATADA -->
     <h2 class="clause-heading">TRÁFEGO PAGO E ASSUNÇÃO DE RISCO PELA CONTRATADA</h2>
     <div class="callout-risk">
-      <strong>Assunção Integral do Investimento e Risco pela Contratada:</strong> A CONTRATADA (IA Infinito) será integralmente responsável pelo planejamento, configuração, gestão, otimização e custeio financeiro das campanhas de tráfego pago vinculadas à operação contratada, não havendo cobrança adicional de verba de mídia à CONTRATANTE além da remuneração pactuada na Cláusula {{.RemuneracaoClauseNum}}.
+      <strong>Assunção Integral do Investimento e Risco pela Contratada:</strong> A CONTRATADA (IA Infinito) será integralmente responsável pelo planejamento, configuração, gestão, otimização e custeio financeiro das campanhas de tráfego pago nas plataformas <strong>{{.PlataformasAdsFormatted}}</strong>, não havendo cobrança adicional de verba de mídia à CONTRATANTE além da remuneração pactuada na Cláusula {{.RemuneracaoClauseNum}}.
     </div>
     <p class="clause-item">Em decorrência da assunção do investimento publicitário pela CONTRATADA, todo o risco financeiro e operacional relativo à aplicação da verba de mídia, variações de leilão, custo por clique ou desempenho financeiro dos anúncios fica integralmente sob responsabilidade da CONTRATADA.</p>
     <p class="clause-item">A CONTRATADA definirá de forma autônoma a distribuição de orçamento, os períodos de veiculação, os testes de público e a escala das campanhas, visando maximizar a geração de oportunidades qualificadas para a CONTRATANTE.</p>
     <p class="clause-item">Eventuais bloqueios técnicos, instabilidades, revisões de políticas ou indisponibilidades impostas pelas próprias plataformas de terceiros (Meta, Google, TikTok e correlatas) serão geridos tecnicamente pela CONTRATADA para restabelecimento da operação, não caracterizando infração contratual.</p>
+    {{else if .IsTrafegoVerbaCliente}}
+    <!-- GESTÃO DE TRÁFEGO PAGO E INVESTIMENTO EM MÍDIA -->
+    <h2 class="clause-heading">GESTÃO DE TRÁFEGO PAGO E INVESTIMENTO EM MÍDIA</h2>
+    <p class="clause-item">A CONTRATADA (IA Infinito) executará a gestão técnica e estratégica das campanhas de tráfego pago nas plataformas <strong>{{.PlataformasAdsFormatted}}</strong>, abrangendo planejamento, criação de anúncios, segmentação de públicos, testes A/B e otimizações contínuas.</p>
+    <p class="clause-item">O investimento direto em verba de mídia (anúncios) será de responsabilidade exclusiva da CONTRATANTE, que realizará o pagamento diretamente às plataformas digitais selecionadas por meio de conta e forma de pagamento próprias, não estando a verba publicitária incluída na remuneração da Cláusula {{.RemuneracaoClauseNum}}.</p>
+    <p class="clause-item">Eventuais bloqueios técnicos, instabilidades, revisões de políticas ou indisponibilidades impostas pelas plataformas de terceiros (Meta, Google, TikTok e correlatas) serão geridos tecnicamente pela CONTRATADA para restabelecimento da operação, não caracterizando infração contratual.</p>
     {{end}}
 
     {{if .HasLeadsClause}}
@@ -477,8 +490,10 @@
       {{if and .Escopo.LinkMulticanal .HasCanais}}
       <li>Desenvolver, configurar e manter atualizado o link personalizado com os canais {{.CanaisFormatted}}.</li>
       {{end}}
-      {{if .Escopo.TrafegoPago}}
+      {{if .IsTrafegoRiscoContratada}}
       <li>Assumir integralmente o investimento financeiro e os riscos operacionais referentes às campanhas de tráfego pago previstas neste contrato.</li>
+      {{else if .IsTrafegoVerbaCliente}}
+      <li>Realizar a gestão técnica, criação e otimização das campanhas de tráfego pago nas plataformas {{.PlataformasAdsFormatted}}.</li>
       {{end}}
       <li>Manter a CONTRATANTE informada sobre o andamento do cronograma e evoluções da operação.</li>
       <li>Zelar pelo sigilo das credenciais, acessos e informações comerciais fornecidas pela CONTRATANTE, utilizando-os estritamente na execução deste contrato.</li>
@@ -541,7 +556,7 @@
 
     <!-- REMUNERAÇÃO E CONDIÇÕES DE PAGAMENTO -->
     <h2 class="clause-heading">REMUNERAÇÃO E CONDIÇÕES DE PAGAMENTO</h2>
-    <p class="clause-item">Pelos serviços prestados{{if .Escopo.TrafegoPago}}, incluindo a gestão e o custeio integral do investimento em tráfego pago assumido pela CONTRATADA{{end}}, a CONTRATANTE pagará os seguintes valores:</p>
+    <p class="clause-item">Pelos serviços prestados{{if .IsTrafegoRiscoContratada}}, incluindo a gestão e o custeio integral do investimento em tráfego pago assumido pela CONTRATADA{{end}}, a CONTRATANTE pagará os seguintes valores:</p>
 
     <table class="finance-table">
       <thead>
@@ -562,7 +577,7 @@
         {{if .HasMonthlyFee}}
         <tr>
           <td>Mensalidade Recorrente</td>
-          <td>R$ {{.MonthlyFeeFormatted}} ({{.MonthlyFeeExtenso}}){{if .Escopo.TrafegoPago}} — com verba de tráfego pago já assumida pela CONTRATADA{{end}}</td>
+          <td>R$ {{.MonthlyFeeFormatted}} ({{.MonthlyFeeExtenso}}){{if .IsTrafegoRiscoContratada}} — com verba de tráfego pago já assumida pela CONTRATADA{{end}}</td>
           <td>{{.MonthlyPaymentForm}}</td>
         </tr>
         <tr>
@@ -579,7 +594,7 @@
     {{end}}
 
     <p class="clause-item">O atraso no pagamento de qualquer parcela sujeitará a CONTRATANTE ao pagamento de multa moratória de 2% (dois por cento) sobre o valor devido, acrescida de juros de mora de 1% (um por cento) ao mês, calculados pro rata die, além de correção monetária pelo índice IPCA/IBGE.</p>
-    <p class="clause-item">Persistindo a inadimplência por período superior a 10 (dez) dias após notificação formal, a CONTRATADA poderá suspender imediatamente {{if .Escopo.TrafegoPago}}a veiculação das campanhas de tráfego pago custeadas por ela e as demais entregas{{else}}a execução dos serviços e entregas contratadas{{end}} até a efetiva regularização financeira.</p>
+    <p class="clause-item">Persistindo a inadimplência por período superior a 10 (dez) dias após notificação formal, a CONTRATADA poderá suspender imediatamente {{if .IsTrafegoRiscoContratada}}a veiculação das campanhas de tráfego pago custeadas por ela e as demais entregas{{else}}a execução dos serviços e entregas contratadas{{end}} até a efetiva regularização financeira.</p>
 
     <!-- VIGÊNCIA E RESCISÃO -->
     <h2 class="clause-heading">VIGÊNCIA E RESCISÃO</h2>
@@ -663,8 +678,10 @@
     {{if and .Escopo.LinkMulticanal .HasCanais}}
     <li><strong>Link Personalizado Multicanal:</strong> estruturação e manutenção do hub de links oficiais integrando <strong>{{.CanaisFormatted}}</strong> com rastreamento de cliques.</li>
     {{end}}
-    {{if .Escopo.TrafegoPago}}
-    <li><strong>Tráfego Pago (Custeado pela Contratada):</strong> criação, gestão, testes de criativos/públicos e investimento financeiro direto em mídia paga assumido integralmente pela <strong>IA Infinito</strong>.</li>
+    {{if .IsTrafegoRiscoContratada}}
+    <li><strong>Tráfego Pago (Custeado pela Contratada):</strong> criação, gestão, testes de criativos/públicos nas plataformas <strong>{{.PlataformasAdsFormatted}}</strong> e investimento financeiro direto em mídia paga assumido integralmente pela <strong>IA Infinito</strong>.</li>
+    {{else if .IsTrafegoVerbaCliente}}
+    <li><strong>Gestão de Tráfego Pago (Verba da Contratante):</strong> criação, gestão, testes de criativos/públicos e otimização contínua nas plataformas <strong>{{.PlataformasAdsFormatted}}</strong>, com investimento em mídia custeado diretamente pela CONTRATANTE às plataformas.</li>
     {{end}}
     {{if .Escopo.CaptacaoLeads}}
     <li><strong>Captação de Oportunidades:</strong> encaminhamento estruturado dos leads para o WhatsApp ou formulário comercial da CONTRATANTE e relatório mensal de performance.</li>

@@ -99,8 +99,8 @@ func TestContractRepository_WAL_CRUD_Search(t *testing.T) {
 		t.Errorf("expected default modelo_contrato='padrao' and escopo_json='{}', got modelo=%q escopo=%q", updated.ModeloContrato, updated.EscopoJSON)
 	}
 
-	// Create and reload a marketing_ia_infinito contract with custom escopo_json
-	escopoJSON := `{"ciclo_estrategico_dias":90,"posicionamento_editorial":true,"conteudo_organico":true,"link_multicanal":true,"trafego_pago":false,"captacao_leads":true,"qtd_imagens":8,"freq_imagens":"mensais","qtd_reels":0,"freq_reels":"semanais","direcionamento_stories":false,"horas_gravacao_semanal":1,"canais":["WhatsApp","Instagram"]}`
+	// Create and reload a unified contract with custom escopo_json
+	escopoJSON := `{"ciclo_estrategico_dias":90,"posicionamento_editorial":true,"conteudo_organico":true,"link_multicanal":true,"trafego_pago":true,"modalidade_trafego":"verba_cliente","plataformas_ads":["Meta Ads (Instagram/Facebook)","Google Ads"],"captacao_leads":true,"qtd_imagens":24,"obs_imagens":"8 por mês","qtd_reels":12,"obs_gravacao":"1h/semana em bloco","direcionamento_stories":true,"horas_gravacao_semanal":1,"canais":["WhatsApp","Instagram"]}`
 	c2 := &domain.Contract{
 		ClientCompanyName: "Beta Marketing Ltda",
 		ClientTradeName:   "Beta Digital",
@@ -115,9 +115,8 @@ func TestContractRepository_WAL_CRUD_Search(t *testing.T) {
 		DueDay:            10,
 		StartDate:         "2026-11-22",
 		CityForum:         "Campo Grande/MS",
-		ModeloContrato:    domain.ModeloMarketingIAInfinito,
 		EscopoJSON:        escopoJSON,
-		PayloadJSON:       `{"modelo_contrato":"marketing_ia_infinito"}`,
+		PayloadJSON:       `{"client_company_name":"Beta Marketing Ltda"}`,
 		Status:            domain.StatusDraft,
 	}
 	if err := repo.Create(ctx, c2); err != nil {
@@ -127,8 +126,8 @@ func TestContractRepository_WAL_CRUD_Search(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetByID c2 failed: %v", err)
 	}
-	if got2.ModeloContrato != domain.ModeloMarketingIAInfinito || got2.EscopoJSON != escopoJSON {
-		t.Errorf("unexpected marketing contract persistence: modelo=%q escopo=%q", got2.ModeloContrato, got2.EscopoJSON)
+	if got2.EscopoJSON != escopoJSON {
+		t.Errorf("unexpected contract escopo persistence: escopo=%q", got2.EscopoJSON)
 	}
 }
 

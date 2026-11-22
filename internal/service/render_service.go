@@ -53,11 +53,15 @@ type contractTemplateData struct {
 	ObjectServicesText      string
 	HasCanais               bool
 	CanaisFormatted         string
+	IsTrafegoRiscoContratada bool
+	IsTrafegoVerbaCliente    bool
+	PlataformasAdsFormatted  string
 	HasLeadsClause          bool
 	HasAnexoI               bool
 	CicloEstrategicoDias    int
 	CicloEstrategicoExtenso string
 	HorasGravacaoExtenso    string
+	GravacaoTexto           string
 	ClientParticipationText string
 	RemuneracaoClauseNum    int
 	ConteudoOrganicoDesc    string
@@ -170,14 +174,20 @@ func (r *RenderService) RenderHTML(in domain.ContractInput) (string, error) {
 	// Dynamic scope derivations
 	hasCanais := escopo.LinkMulticanal && len(escopo.Canais) > 0
 	canaisFormatted := joinPortugueseList(escopo.Canais)
+	isTrafegoRisco := escopo.TrafegoPago && escopo.ModalidadeTrafego != domain.TrafegoVerbaCliente
+	isTrafegoVerbaCliente := escopo.TrafegoPago && escopo.ModalidadeTrafego == domain.TrafegoVerbaCliente
+	plataformasAdsFormatted := joinPortugueseList(escopo.PlataformasAds)
+	if plataformasAdsFormatted == "" {
+		plataformasAdsFormatted = "Meta Ads (Instagram/Facebook), Google Ads e TikTok Ads"
+	}
 	hasLeadsClause := hasCanais || escopo.CaptacaoLeads || escopo.TrafegoPago
 	hasAnexoI := escopo.PosicionamentoEditorial || escopo.ConteudoOrganico || hasCanais || escopo.TrafegoPago || escopo.CaptacaoLeads
 
 	var leadParts, objParts, opParts []string
 	if escopo.ServicosBaseTecnologia {
-		leadParts = append(leadParts, "soluções de tecnologia, automação e implantação de sistemas")
-		objParts = append(objParts, "implantação, automação, integração de sistemas e suporte tecnológico")
-		opParts = append(opParts, "tecnologia, automação e sistemas")
+		leadParts = append(leadParts, "automação, inteligência artificial e sistemas sob medida")
+		objParts = append(objParts, "automação, soluções com inteligência artificial, integração de sistemas e suporte tecnológico")
+		opParts = append(opParts, "automação, IA e sistemas")
 	}
 	if escopo.PosicionamentoEditorial {
 		leadParts = append(leadParts, "estratégia de posicionamento de marca")
@@ -194,10 +204,14 @@ func (r *RenderService) RenderHTML(in domain.ContractInput) (string, error) {
 		objParts = append(objParts, "criação e manutenção de link personalizado multicanal")
 		opParts = append(opParts, "link personalizado multicanal")
 	}
-	if escopo.TrafegoPago {
+	if isTrafegoRisco {
 		leadParts = append(leadParts, "gestão e investimento em mídia paga")
 		objParts = append(objParts, "gestão e investimento direto em campanhas de tráfego pago")
 		opParts = append(opParts, "operação de tráfego pago")
+	} else if isTrafegoVerbaCliente {
+		leadParts = append(leadParts, "gestão estratégica de tráfego pago")
+		objParts = append(objParts, "gestão estratégica, criação e otimização de campanhas de tráfego pago")
+		opParts = append(opParts, "gestão de tráfego pago")
 	}
 	if escopo.CaptacaoLeads {
 		leadParts = append(leadParts, "geração de oportunidades comerciais")
@@ -220,17 +234,16 @@ func (r *RenderService) RenderHTML(in domain.ContractInput) (string, error) {
 		operationModelText = "Prestação recorrente de serviços de " + joinPortugueseList(opParts) + "."
 	}
 
+	gravacaoTexto := escopo.ObsGravacao
+	if gravacaoTexto == "" && escopo.HorasGravacaoSemanal > 0 {
+		gravacaoTexto = fmt.Sprintf("%dh/semana em bloco", escopo.HorasGravacaoSemanal)
+	}
+
 	var clientParticipation string
-	if escopo.ConteudoOrganico && escopo.HorasGravacaoSemanal > 0 {
-		horaWord := "hora"
-		if escopo.HorasGravacaoSemanal > 1 {
-			horaWord = "horas"
-		}
+	if escopo.ConteudoOrganico && gravacaoTexto != "" {
 		clientParticipation = fmt.Sprintf(
-			"Disponibilidade de aproximadamente %d (%s) %s por semana para gravação em bloco, validação de materiais e atendimento comercial aos interessados.",
-			escopo.HorasGravacaoSemanal,
-			horasExtensoFeminino(escopo.HorasGravacaoSemanal),
-			horaWord,
+			"Disponibilidade conforme rotina combinada (%s) para gravação, validação de materiais e atendimento comercial aos interessados.",
+			gravacaoTexto,
 		)
 	} else {
 		clientParticipation = "Disponibilidade para fornecimento de informações, acessos técnicos, validações de entregas e acompanhamento operacional."
@@ -251,8 +264,8 @@ func (r *RenderService) RenderHTML(in domain.ContractInput) (string, error) {
 		remuneracaoNum++
 	}
 
-	// Anexo I — Conteúdo Orgânico dynamic text
-	conteudoDesc := buildConteudoOrganicoDesc(escopo)
+	// Anexo I — Conteúdo Orgânico dynamic text (90-day cycle)
+	conteudoDesc := buildConteudoOrganicoDesc(escopo, gravacaoTexto)
 
 	// Anexo I — Jornada Estratégica Inicial
 	dias := escopo.CicloEstrategicoDias
@@ -279,15 +292,20 @@ func (r *RenderService) RenderHTML(in domain.ContractInput) (string, error) {
 	if escopo.ConteudoOrganico {
 		f1Parts = append(f1Parts, "definição de roteiros e início das gravações")
 	}
-	if escopo.TrafegoPago {
-		f1Parts = append(f1Parts, "ativação das primeiras campanhas custeadas pela IA Infinito")
+	if isTrafegoRisco {
+		f1Parts = append(f1Parts, fmt.Sprintf("ativação das primeiras campanhas em %s custeadas pela IA Infinito", plataformasAdsFormatted))
+	} else if isTrafegoVerbaCliente {
+		f1Parts = append(f1Parts, fmt.Sprintf("configuração e ativação das primeiras campanhas em %s com verba da CONTRATANTE", plataformasAdsFormatted))
 	}
 	fase1Desc := joinPortugueseList(f1Parts) + "."
 
 	var fase2Desc, fase3Desc string
-	if escopo.TrafegoPago {
+	if isTrafegoRisco {
 		fase2Desc = "Veiculação de conteúdos e campanhas de tráfego pago custeadas pela CONTRATADA para validar abordagens que geram conversas qualificadas."
 		fase3Desc = "Concentração de esforços e verba de mídia nos criativos, canais e públicos com maior taxa de conversão comercial para a CONTRATANTE."
+	} else if isTrafegoVerbaCliente {
+		fase2Desc = "Veiculação de conteúdos e otimização das campanhas de tráfego pago (com verba direta da CONTRATANTE) para validar abordagens que geram conversas qualificadas."
+		fase3Desc = "Concentração de esforços nos criativos, canais e públicos validados com maior taxa de conversão comercial para a CONTRATANTE."
 	} else {
 		fase2Desc = "Análise de métricas reais de engajamento e conversão, otimização de pautas e criativos e validação das abordagens que geram conversas qualificadas."
 		fase3Desc = "Concentração de esforços nos formatos e canais validados com maior taxa de conversão comercial para a CONTRATANTE."
@@ -328,20 +346,24 @@ func (r *RenderService) RenderHTML(in domain.ContractInput) (string, error) {
 		ContratadaRepDisplay:     contratadaRep,
 		ContratadaRepCPFDisplay:  contratadaCPF,
 
-		Escopo:                  escopo,
-		LeadSubtitle:            leadSubtitle,
-		OperationModelText:      operationModelText,
-		ObjectServicesText:      objectServicesText,
-		HasCanais:               hasCanais,
-		CanaisFormatted:         canaisFormatted,
-		HasLeadsClause:          hasLeadsClause,
-		HasAnexoI:               hasAnexoI,
-		CicloEstrategicoDias:    dias,
-		CicloEstrategicoExtenso: domain.NumberToPortuguese(int64(dias)),
-		HorasGravacaoExtenso:    horasExtensoFeminino(escopo.HorasGravacaoSemanal),
-		ClientParticipationText: clientParticipation,
-		RemuneracaoClauseNum:    remuneracaoNum,
-		ConteudoOrganicoDesc:    conteudoDesc,
+		Escopo:                   escopo,
+		LeadSubtitle:             leadSubtitle,
+		OperationModelText:       operationModelText,
+		ObjectServicesText:       objectServicesText,
+		HasCanais:                hasCanais,
+		CanaisFormatted:          canaisFormatted,
+		IsTrafegoRiscoContratada: isTrafegoRisco,
+		IsTrafegoVerbaCliente:    isTrafegoVerbaCliente,
+		PlataformasAdsFormatted:  plataformasAdsFormatted,
+		HasLeadsClause:           hasLeadsClause,
+		HasAnexoI:                hasAnexoI,
+		CicloEstrategicoDias:     dias,
+		CicloEstrategicoExtenso:  domain.NumberToPortuguese(int64(dias)),
+		HorasGravacaoExtenso:     horasExtensoFeminino(escopo.HorasGravacaoSemanal),
+		GravacaoTexto:            gravacaoTexto,
+		ClientParticipationText:  clientParticipation,
+		RemuneracaoClauseNum:     remuneracaoNum,
+		ConteudoOrganicoDesc:     conteudoDesc,
 
 		Fase1Periodo: fase1Periodo,
 		Fase2Periodo: fase2Periodo,
@@ -358,37 +380,51 @@ func (r *RenderService) RenderHTML(in domain.ContractInput) (string, error) {
 	return buf.String(), nil
 }
 
-func buildConteudoOrganicoDesc(e domain.EscopoMarketing) string {
-	parts := []string{"planejamento de pautas, roteiros, ganchos, legendas"}
-	if e.HorasGravacaoSemanal > 0 {
-		parts = append(parts, fmt.Sprintf("orientação de gravação (%dh/semana em bloco)", e.HorasGravacaoSemanal))
+func buildConteudoOrganicoDesc(e domain.EscopoMarketing, gravacaoTexto string) string {
+	dias := e.CicloEstrategicoDias
+	if dias <= 0 {
+		dias = 90
 	}
+	diasExt := domain.NumberToPortuguese(int64(dias))
+
+	var entregas []string
 	if e.QtdImagens > 0 {
-		parts = append(parts, fmt.Sprintf(
-			"criação de %d (%s) imagens/artes %s",
-			e.QtdImagens,
-			domain.NumberToPortuguese(int64(e.QtdImagens)),
-			e.FreqImagens,
-		))
+		imgPart := fmt.Sprintf("%d (%s) imagens/artes estáticas", e.QtdImagens, domain.NumberToPortuguese(int64(e.QtdImagens)))
+		if e.ObsImagens != "" {
+			imgPart += fmt.Sprintf(" (%s)", e.ObsImagens)
+		}
+		entregas = append(entregas, imgPart)
 	}
 	if e.QtdReels > 0 {
-		parts = append(parts, fmt.Sprintf(
-			"edição de até %d (%s) Reels %s",
-			e.QtdReels,
-			domain.NumberToPortuguese(int64(e.QtdReels)),
-			e.FreqReels,
-		))
+		vidPart := fmt.Sprintf("%d (%s) vídeos/Reels editados", e.QtdReels, domain.NumberToPortuguese(int64(e.QtdReels)))
+		entregas = append(entregas, vidPart)
 	}
 
 	var base string
-	if len(parts) == 1 {
-		base = parts[0]
+	if len(entregas) > 0 {
+		base = fmt.Sprintf(
+			"Produção e entrega de %s ao longo do ciclo estratégico de %d (%s) dias",
+			joinPortugueseList(entregas),
+			dias,
+			diasExt,
+		)
 	} else {
-		base = strings.Join(parts[:len(parts)-1], ", ") + " e " + parts[len(parts)-1]
+		base = fmt.Sprintf(
+			"Planejamento editorial, pautas, roteiros, ganchos e legendas ao longo do ciclo estratégico de %d (%s) dias",
+			dias,
+			diasExt,
+		)
 	}
 
+	var extras []string
+	if gravacaoTexto != "" {
+		extras = append(extras, fmt.Sprintf("orientação de gravação (%s)", gravacaoTexto))
+	}
 	if e.DirecionamentoStories {
-		base += " + direcionamento de Stories"
+		extras = append(extras, "direcionamento de Stories")
+	}
+	if len(extras) > 0 {
+		base += ", com " + joinPortugueseList(extras)
 	}
 	return base + "."
 }

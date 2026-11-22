@@ -221,7 +221,7 @@ func TestRenderService_UnifiedDynamicScope_ScenarioA_And_ScenarioB(t *testing.T)
 	mustHaveA := []string{
 		"counter-reset: clausula;",
 		"counter-increment: clausula;",
-		"Serviços Base, Tecnologia e Automação",
+		"Automação, IA e Sistemas Sob Medida",
 		"1.800,00",
 		"Cláusula 11",
 	}
@@ -233,6 +233,7 @@ func TestRenderService_UnifiedDynamicScope_ScenarioA_And_ScenarioB(t *testing.T)
 
 	mustOmitA := []string{
 		"TRÁFEGO PAGO E ASSUNÇÃO DE RISCO",
+		"GESTÃO DE TRÁFEGO PAGO E INVESTIMENTO EM MÍDIA",
 		"TRÁFEGO PAGO E RISCO",
 		"CANAIS INTEGRADOS",
 		"MODELO DE CONTEÚDO E PARTICIPAÇÃO",
@@ -247,14 +248,15 @@ func TestRenderService_UnifiedDynamicScope_ScenarioA_And_ScenarioB(t *testing.T)
 		}
 	}
 
-	// Cenário B: Serviços de Marketing habilitados com quantidades personalizadas de Imagens, Reels, canais e Tráfego Pago
+	// Cenário B: Serviços de Marketing habilitados com quantidades no ciclo de 90 dias, canais e Tráfego Pago (risco_contratada)
 	fullEscopo := domain.DefaultEscopoMarketing()
-	fullEscopo.QtdImagens = 4
-	fullEscopo.FreqImagens = "semanais"
-	fullEscopo.QtdReels = 3
-	fullEscopo.FreqReels = "semanais"
+	fullEscopo.QtdImagens = 12
+	fullEscopo.ObsImagens = "4 por mês"
+	fullEscopo.QtdReels = 36
+	fullEscopo.ObsGravacao = "1h/semana em bloco"
 	fullEscopo.DirecionamentoStories = true
-	fullEscopo.HorasGravacaoSemanal = 1
+	fullEscopo.ModalidadeTrafego = domain.TrafegoRiscoContratada
+	fullEscopo.PlataformasAds = []string{"Meta Ads (Instagram/Facebook)", "Google Ads", "TikTok Ads"}
 	fullEscopo.Canais = []string{"WhatsApp", "Instagram", "Facebook", "Google", "TikTok"}
 
 	inB := domain.ContractInput{
@@ -288,13 +290,13 @@ func TestRenderService_UnifiedDynamicScope_ScenarioA_And_ScenarioB(t *testing.T)
 		"Clínica Exemplo",
 		"TRÁFEGO PAGO E ASSUNÇÃO DE RISCO PELA CONTRATADA",
 		"Assunção Integral do Investimento e Risco pela Contratada",
+		"Meta Ads (Instagram/Facebook), Google Ads e TikTok Ads",
 		"Implantação / Setup",
 		"1.500,00",
 		"2.500,00",
 		"WhatsApp, Instagram, Facebook, Google e TikTok",
 		"ANEXO I · ESCOPO OPERACIONAL",
-		"criação de 4 (quatro) imagens/artes semanais",
-		"edição de até 3 (três) Reels semanais + direcionamento de Stories",
+		"Produção e entrega de 12 (doze) imagens/artes estáticas (4 por mês) e 36 (trinta e seis) vídeos/Reels editados ao longo do ciclo estratégico de 90 (noventa) dias, com orientação de gravação (1h/semana em bloco) e direcionamento de Stories.",
 		"Campo Grande/MS, 22 de novembro de 2026.",
 		"Cláusula 14",
 	}
@@ -302,5 +304,32 @@ func TestRenderService_UnifiedDynamicScope_ScenarioA_And_ScenarioB(t *testing.T)
 		if !strings.Contains(htmlBDecoded, needle) {
 			t.Errorf("Scenario B missing %q", needle)
 		}
+	}
+
+	// Cenário C: Tráfego Pago com verba custeada pelo cliente (verba_cliente) + apenas Meta Ads e Google Ads
+	verbaClienteEscopo := fullEscopo
+	verbaClienteEscopo.ModalidadeTrafego = domain.TrafegoVerbaCliente
+	verbaClienteEscopo.PlataformasAds = []string{"Meta Ads (Instagram/Facebook)", "Google Ads"}
+	inC := inB
+	inC.EscopoMarketing = &verbaClienteEscopo
+	htmlC, err := svc.RenderHTML(inC)
+	if err != nil {
+		t.Fatalf("RenderHTML Scenario C failed: %v", err)
+	}
+	htmlCDecoded := html.UnescapeString(htmlC)
+
+	mustHaveC := []string{
+		"GESTÃO DE TRÁFEGO PAGO E INVESTIMENTO EM MÍDIA",
+		"Meta Ads (Instagram/Facebook) e Google Ads",
+		"custeada diretamente pela CONTRATANTE às plataformas",
+		"responsabilidade exclusiva da CONTRATANTE",
+	}
+	for _, needle := range mustHaveC {
+		if !strings.Contains(htmlCDecoded, needle) {
+			t.Errorf("Scenario C missing %q", needle)
+		}
+	}
+	if strings.Contains(htmlCDecoded, "Assunção Integral do Investimento e Risco pela Contratada") {
+		t.Errorf("Scenario C (verba_cliente) must not include risco_contratada callout")
 	}
 }

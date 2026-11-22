@@ -222,7 +222,7 @@ func TestHTTP_EndpointsAndPDFGeneration(t *testing.T) {
 		t.Fatalf("GET scenario A PDF failed: code=%d len=%d", rec.Code, rec.Body.Len())
 	}
 
-	// 10. Cenário B (Contrato Único — Marketing completo com quantidades personalizadas, canais e tráfego pago) -> Create + PDF generation
+	// 10. Cenário B (Contrato Único — Marketing 90 dias com modalidade verba_cliente e plataformas) -> Create + PDF generation
 	scenarioBPayload := `{
 		"client_company_name": "Clinica Alpha Ltda",
 		"client_trade_name": "Alpha Odonto",
@@ -244,11 +244,13 @@ func TestHTTP_EndpointsAndPDFGeneration(t *testing.T) {
 			"conteudo_organico": true,
 			"link_multicanal": true,
 			"trafego_pago": true,
+			"modalidade_trafego": "verba_cliente",
+			"plataformas_ads": ["Meta Ads (Instagram/Facebook)", "Google Ads"],
 			"captacao_leads": true,
-			"qtd_imagens": 4,
-			"freq_imagens": "semanais",
-			"qtd_reels": 3,
-			"freq_reels": "semanais",
+			"qtd_imagens": 24,
+			"obs_imagens": "8 por mês",
+			"qtd_reels": 36,
+			"obs_gravacao": "1h/semana em bloco",
 			"direcionamento_stories": true,
 			"horas_gravacao_semanal": 1,
 			"canais": ["WhatsApp", "Instagram", "Facebook", "Google", "TikTok"]
