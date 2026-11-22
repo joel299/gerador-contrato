@@ -13,76 +13,54 @@ import (
 )
 
 type contractTemplateData struct {
-	ClientCompanyName       string
-	ClientCNPJFormatted     string
-	ClientAddress           string
-	ClientRepName           string
-	ClientRepQualif         string
-	ClientRepDocument       string
-	SetupFeeFormatted       string
-	SetupFeeExtenso         string
-	SetupInstallments       int
+	ClientCompanyName         string
+	ClientTradeName           string
+	ClientCNPJFormatted       string
+	ClientAddress             string
+	ClientRepName             string
+	ClientRepQualif           string
+	ClientRepDocument         string
+	HasSetupFee               bool
+	SetupFeeFormatted         string
+	SetupFeeExtenso           string
+	SetupInstallments         int
 	SetupInstallmentFormatted string
 	SetupInstallmentExtenso   string
-	SetupSummaryText        string
-	SetupClauseValueText    string
-	SetupPaymentForm        string
-	HasMonthlyFee           bool
-	MonthlyFeeFormatted     string
-	MonthlyFeeExtenso       string
-	MonthlySummaryText      string
-	MonthlyPaymentForm      string
-	PayOnSignature          bool
-	IncludeWitnesses        bool
-	DueDay                  int
-	BillingStartDateDisplay string
-	CityForum               string
-	SignatureDateFull       string
+	SetupSummaryText          string
+	SetupClauseValueText      string
+	SetupPaymentForm          string
+	HasMonthlyFee             bool
+	MonthlyFeeFormatted       string
+	MonthlyFeeExtenso         string
+	MonthlySummaryText        string
+	MonthlyPaymentForm        string
+	PayOnSignature            bool
+	IncludeWitnesses          bool
+	DueDay                    int
+	BillingStartDateDisplay   string
+	CityForum                 string
+	SignatureDateFull         string
 
 	ContratadaCompanyName    string
 	ContratadaCNPJDisplay    string
 	ContratadaAddressDisplay string
 	ContratadaRepDisplay     string
 	ContratadaRepCPFDisplay  string
-}
 
-type marketingTemplateData struct {
-	ClientCompanyName        string
-	ClientTradeName          string
-	ClientCNPJFormatted      string
-	ClientAddress            string
-	ClientRepName            string
-	ClientRepDocument        string
-	ContratadaCompanyName    string
-	ContratadaCNPJDisplay    string
-	ContratadaAddressDisplay string
-	ContratadaRepDisplay     string
-	CityForum                string
-	SignatureDateFull        string
-	IncludeWitnesses         bool
-
-	Escopo domain.EscopoMarketing
-
+	Escopo                  domain.EscopoMarketing
 	LeadSubtitle            string
 	OperationModelText      string
 	ObjectServicesText      string
 	HasCanais               bool
 	CanaisFormatted         string
+	HasLeadsClause          bool
+	HasAnexoI               bool
 	CicloEstrategicoDias    int
 	CicloEstrategicoExtenso string
 	HorasGravacaoExtenso    string
 	ClientParticipationText string
-
-	HasSetupFee             bool
-	SetupFeeFormatted       string
-	SetupFeeExtenso         string
-	SetupMarketingCondition string
-	MonthlyFeeFormatted     string
-	MonthlyFeeExtenso       string
-	DueDay                  int
-
-	RemuneracaoClauseNum int
-	ConteudoOrganicoDesc string
+	RemuneracaoClauseNum    int
+	ConteudoOrganicoDesc    string
 
 	Fase1Periodo string
 	Fase2Periodo string
@@ -92,11 +70,10 @@ type marketingTemplateData struct {
 	Fase3Desc    string
 }
 
-// RenderService compiles and renders the official IA Infinito contract HTML templates.
+// RenderService compiles and renders the unified official IA Infinito contract HTML template.
 type RenderService struct {
-	tmpl          *template.Template
-	marketingTmpl *template.Template
-	cfg           *config.Config
+	tmpl *template.Template
+	cfg  *config.Config
 }
 
 func NewRenderService(cfg *config.Config) (*RenderService, error) {
@@ -104,19 +81,17 @@ func NewRenderService(cfg *config.Config) (*RenderService, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse contract_v1.html: %w", err)
 	}
-	marketingTmpl, err := template.ParseFS(web.Assets, "templates/contract_marketing_ia_infinito.html")
-	if err != nil {
-		return nil, fmt.Errorf("parse contract_marketing_ia_infinito.html: %w", err)
-	}
-	return &RenderService{tmpl: tmpl, marketingTmpl: marketingTmpl, cfg: cfg}, nil
+	return &RenderService{tmpl: tmpl, cfg: cfg}, nil
 }
 
-// RenderHTML renders the contract HTML using html/template (auto-escaping all user inputs).
+// RenderHTML renders the unified official contract HTML using html/template (auto-escaping all user inputs).
 func (r *RenderService) RenderHTML(in domain.ContractInput) (string, error) {
 	in.Normalize(r.cfg.DefaultCityForum)
 
-	if in.ModeloContrato == domain.ModeloMarketingIAInfinito {
-		return r.renderMarketingHTML(in)
+	escopo := domain.DefaultEscopoMarketing()
+	if in.EscopoMarketing != nil {
+		escopo = *in.EscopoMarketing
+		escopo.Normalize()
 	}
 
 	qualifParts := nonEmpty(in.ClientRepNationality, in.ClientRepMaritalStatus, in.ClientRepProfession)
@@ -138,6 +113,7 @@ func (r *RenderService) RenderHTML(in domain.ContractInput) (string, error) {
 	}
 	payMethod := in.EffectiveSetupPaymentMethod()
 	totalFinalCents, installmentCents := domain.CalculateSetupInstallmentsWithMethod(in.SetupFeeCents, installments, payMethod)
+	hasSetupFee := totalFinalCents > 0
 	setupTotalFormatted := domain.FormatBRL(totalFinalCents)
 	setupTotalExtenso := domain.CentsToExtenso(totalFinalCents)
 	installmentFormatted := domain.FormatBRL(installmentCents)
@@ -191,13 +167,141 @@ func (r *RenderService) RenderHTML(in domain.ContractInput) (string, error) {
 		monthlySummaryText = "Sem mensalidade recorrente"
 	}
 
+	// Dynamic scope derivations
+	hasCanais := escopo.LinkMulticanal && len(escopo.Canais) > 0
+	canaisFormatted := joinPortugueseList(escopo.Canais)
+	hasLeadsClause := hasCanais || escopo.CaptacaoLeads || escopo.TrafegoPago
+	hasAnexoI := escopo.PosicionamentoEditorial || escopo.ConteudoOrganico || hasCanais || escopo.TrafegoPago || escopo.CaptacaoLeads
+
+	var leadParts, objParts, opParts []string
+	if escopo.ServicosBaseTecnologia {
+		leadParts = append(leadParts, "soluções de tecnologia, automação e implantação de sistemas")
+		objParts = append(objParts, "implantação, automação, integração de sistemas e suporte tecnológico")
+		opParts = append(opParts, "tecnologia, automação e sistemas")
+	}
+	if escopo.PosicionamentoEditorial {
+		leadParts = append(leadParts, "estratégia de posicionamento de marca")
+		objParts = append(objParts, "estratégia de posicionamento de marca")
+		opParts = append(opParts, "posicionamento estratégico")
+	}
+	if escopo.ConteudoOrganico {
+		leadParts = append(leadParts, "produção de conteúdo orgânico")
+		objParts = append(objParts, "planejamento e edição de conteúdo digital")
+		opParts = append(opParts, "conteúdo orgânico")
+	}
+	if hasCanais {
+		leadParts = append(leadParts, "link personalizado multicanal")
+		objParts = append(objParts, "criação e manutenção de link personalizado multicanal")
+		opParts = append(opParts, "link personalizado multicanal")
+	}
+	if escopo.TrafegoPago {
+		leadParts = append(leadParts, "gestão e investimento em mídia paga")
+		objParts = append(objParts, "gestão e investimento direto em campanhas de tráfego pago")
+		opParts = append(opParts, "operação de tráfego pago")
+	}
+	if escopo.CaptacaoLeads {
+		leadParts = append(leadParts, "geração de oportunidades comerciais")
+		objParts = append(objParts, "estruturação da jornada de captação de oportunidades comerciais")
+	}
+	if len(leadParts) == 0 {
+		leadParts = []string{"prestação de serviços especializados de estratégia, tecnologia e suporte operacional"}
+	}
+	if len(objParts) == 0 {
+		objParts = []string{"serviços especializados de estratégia, tecnologia e suporte operacional"}
+	}
+	if len(opParts) == 0 {
+		opParts = []string{"serviços técnicos e estratégicos sob demanda"}
+	}
+
+	leadSubtitle := capitalizeFirst(joinPortugueseList(leadParts)) + "."
+	objectServicesText := "serviços especializados de " + joinPortugueseList(objParts)
+	operationModelText := "Prestação de serviços de " + joinPortugueseList(opParts) + "."
+	if hasMonthly {
+		operationModelText = "Prestação recorrente de serviços de " + joinPortugueseList(opParts) + "."
+	}
+
+	var clientParticipation string
+	if escopo.ConteudoOrganico && escopo.HorasGravacaoSemanal > 0 {
+		horaWord := "hora"
+		if escopo.HorasGravacaoSemanal > 1 {
+			horaWord = "horas"
+		}
+		clientParticipation = fmt.Sprintf(
+			"Disponibilidade de aproximadamente %d (%s) %s por semana para gravação em bloco, validação de materiais e atendimento comercial aos interessados.",
+			escopo.HorasGravacaoSemanal,
+			horasExtensoFeminino(escopo.HorasGravacaoSemanal),
+			horaWord,
+		)
+	} else {
+		clientParticipation = "Disponibilidade para fornecimento de informações, acessos técnicos, validações de entregas e acompanhamento operacional."
+	}
+
+	// Calculate exact clause number of REMUNERAÇÃO E CONDIÇÕES DE PAGAMENTO matching CSS counter(clausula)
+	// Fixed clauses before Remuneração:
+	// 1. Objeto, 2. Escopo, 3. Aprovação e Revisões, 4. Obrigações Contratada, 5. Obrigações Contratante,
+	// 6. Itens Não Incluídos, 7. Indicadores e Relatórios, 8. LGPD, 9. Confidencialidade, 10. Propriedade Intelectual -> 10 fixed + 1 (Remuneração itself) = 11
+	remuneracaoNum := 11
+	if escopo.ConteudoOrganico {
+		remuneracaoNum++
+	}
+	if escopo.TrafegoPago {
+		remuneracaoNum++
+	}
+	if hasLeadsClause {
+		remuneracaoNum++
+	}
+
+	// Anexo I — Conteúdo Orgânico dynamic text
+	conteudoDesc := buildConteudoOrganicoDesc(escopo)
+
+	// Anexo I — Jornada Estratégica Inicial
+	dias := escopo.CicloEstrategicoDias
+	if dias <= 0 {
+		dias = 90
+	}
+	p1End := dias / 3
+	if p1End < 1 {
+		p1End = 1
+	}
+	p2End := (dias * 2) / 3
+	if p2End <= p1End {
+		p2End = p1End + 1
+	}
+	fase1Periodo := fmt.Sprintf("DIAS 01 A %02d — ESTRUTURAÇÃO", p1End)
+	fase2Periodo := fmt.Sprintf("DIAS %02d A %02d — TESTES E VALIDAÇÃO", p1End+1, p2End)
+	fase3Periodo := fmt.Sprintf("DIAS %02d A %02d — CONSOLIDAÇÃO E ESCALA", p2End+1, dias)
+
+	var f1Parts []string
+	f1Parts = append(f1Parts, "Organização da comunicação e dos perfis")
+	if hasCanais {
+		f1Parts = append(f1Parts, fmt.Sprintf("publicação do link personalizado (%s)", canaisFormatted))
+	}
+	if escopo.ConteudoOrganico {
+		f1Parts = append(f1Parts, "definição de roteiros e início das gravações")
+	}
+	if escopo.TrafegoPago {
+		f1Parts = append(f1Parts, "ativação das primeiras campanhas custeadas pela IA Infinito")
+	}
+	fase1Desc := joinPortugueseList(f1Parts) + "."
+
+	var fase2Desc, fase3Desc string
+	if escopo.TrafegoPago {
+		fase2Desc = "Veiculação de conteúdos e campanhas de tráfego pago custeadas pela CONTRATADA para validar abordagens que geram conversas qualificadas."
+		fase3Desc = "Concentração de esforços e verba de mídia nos criativos, canais e públicos com maior taxa de conversão comercial para a CONTRATANTE."
+	} else {
+		fase2Desc = "Análise de métricas reais de engajamento e conversão, otimização de pautas e criativos e validação das abordagens que geram conversas qualificadas."
+		fase3Desc = "Concentração de esforços nos formatos e canais validados com maior taxa de conversão comercial para a CONTRATANTE."
+	}
+
 	data := contractTemplateData{
 		ClientCompanyName:         firstNonEmpty(in.ClientCompanyName, "[RAZÃO SOCIAL DA EMPRESA CONTRATANTE]"),
+		ClientTradeName:           strings.TrimSpace(in.ClientTradeName),
 		ClientCNPJFormatted:       firstNonEmpty(domain.FormatCNPJ(in.ClientCNPJ), "[PREENCHER CNPJ]"),
 		ClientAddress:             firstNonEmpty(in.ClientAddress, "[ENDEREÇO COMPLETO, BAIRRO, CIDADE/UF, CEP]"),
 		ClientRepName:             firstNonEmpty(in.ClientRepName, "[NOME DO REPRESENTANTE LEGAL]"),
 		ClientRepQualif:           strings.Join(qualifParts, ", "),
 		ClientRepDocument:         formatDoc(in.ClientRepDocument),
+		HasSetupFee:               hasSetupFee,
 		SetupFeeFormatted:         setupTotalFormatted,
 		SetupFeeExtenso:           setupTotalExtenso,
 		SetupInstallments:         installments,
@@ -223,208 +327,21 @@ func (r *RenderService) RenderHTML(in domain.ContractInput) (string, error) {
 		ContratadaAddressDisplay: contratadaAddr,
 		ContratadaRepDisplay:     contratadaRep,
 		ContratadaRepCPFDisplay:  contratadaCPF,
-	}
 
-	var buf bytes.Buffer
-	if err := r.tmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("execute contract template: %w", err)
-	}
-	return buf.String(), nil
-}
-
-func (r *RenderService) renderMarketingHTML(in domain.ContractInput) (string, error) {
-	escopo := domain.DefaultEscopoMarketing()
-	if in.EscopoMarketing != nil {
-		escopo = *in.EscopoMarketing
-		escopo.Normalize()
-	}
-
-	contratadaCompany := firstNonEmpty(in.ContratadaCompanyName, r.cfg.ContratadaRazaoSocial, "JOEL ACOSTA QUINTANA JUNIOR DESENVOLVIMENTO DE PROGRAMAS LTDA - EPP")
-	contratadaCNPJ := firstNonEmpty(domain.FormatCNPJ(in.ContratadaCNPJ), domain.FormatCNPJ(r.cfg.ContratadaCNPJ), "63.741.075/0001-43")
-	contratadaAddr := firstNonEmpty(in.ContratadaAddress, r.cfg.ContratadaEndereco, "Campo Grande/MS")
-	contratadaRep := firstNonEmpty(in.ContratadaRepName, r.cfg.ContratadaRepresentante, "Joel Acosta Quintana Junior")
-
-	hasCanais := escopo.LinkMulticanal && len(escopo.Canais) > 0
-	canaisFormatted := joinPortugueseList(escopo.Canais)
-
-	// Lead subtitle & Object clause services
-	var leadParts []string
-	var objParts []string
-	var opParts []string
-
-	if escopo.PosicionamentoEditorial {
-		leadParts = append(leadParts, "estratégia de marca")
-		objParts = append(objParts, "estratégia de marca")
-		opParts = append(opParts, "marketing estratégico")
-	}
-	if escopo.ConteudoOrganico {
-		leadParts = append(leadParts, "produção de conteúdo")
-		objParts = append(objParts, "planejamento e produção de conteúdo")
-		opParts = append(opParts, "conteúdo")
-	}
-	if hasCanais {
-		leadParts = append(leadParts, "link personalizado multicanal")
-		objParts = append(objParts, "implantação de link personalizado multicanal")
-		opParts = append(opParts, "presença digital")
-	}
-	if escopo.TrafegoPago {
-		leadParts = append(leadParts, "gestão e investimento em mídia paga")
-		objParts = append(objParts, "gestão e custeio de mídia paga")
-		opParts = append(opParts, "tráfego pago")
-	}
-	if escopo.CaptacaoLeads {
-		leadParts = append(leadParts, "geração de oportunidades comerciais")
-		objParts = append(objParts, "estruturação da jornada de captação de oportunidades comerciais")
-	}
-	if len(leadParts) == 0 {
-		leadParts = []string{"estratégia digital e serviços de marketing"}
-	}
-	if len(objParts) == 0 {
-		objParts = []string{"estratégia digital e marketing"}
-	}
-	if len(opParts) == 0 {
-		opParts = []string{"marketing e presença digital"}
-	}
-
-	leadSubtitle := capitalizeFirst(joinPortugueseList(leadParts)) + "."
-	objectServicesText := "serviços de " + joinPortugueseList(objParts)
-	operationModelText := "Prestação recorrente de serviços estratégicos de " + joinPortugueseList(opParts) + "."
-
-	// Client participation text
-	var clientParticipation string
-	if escopo.ConteudoOrganico && escopo.HorasGravacaoSemanal > 0 {
-		horaWord := "hora"
-		if escopo.HorasGravacaoSemanal > 1 {
-			horaWord = "horas"
-		}
-		clientParticipation = fmt.Sprintf(
-			"Disponibilidade de aproximadamente %d (%s) %s por semana para gravação em bloco, validações e atendimento comercial dos leads recebidos.",
-			escopo.HorasGravacaoSemanal,
-			horasExtensoFeminino(escopo.HorasGravacaoSemanal),
-			horaWord,
-		)
-	} else {
-		clientParticipation = "Disponibilidade para alinhamentos estratégicos, validações de materiais e atendimento comercial dos leads recebidos."
-	}
-
-	// Financial values
-	installments := in.SetupInstallments
-	if installments < 1 {
-		installments = 1
-	}
-	payMethod := in.EffectiveSetupPaymentMethod()
-	totalFinalCents, installmentCents := domain.CalculateSetupInstallmentsWithMethod(in.SetupFeeCents, installments, payMethod)
-	hasSetupFee := totalFinalCents > 0
-	setupFeeFormatted := domain.FormatBRL(totalFinalCents)
-	setupFeeExtenso := domain.CentsToExtenso(totalFinalCents)
-
-	var setupMarketingCondition string
-	if installments == 1 {
-		if in.EffectivePayOnSignature() {
-			setupMarketingCondition = "parcela única na assinatura deste instrumento"
-		} else {
-			setupMarketingCondition = fmt.Sprintf("parcela única com vencimento no dia %d", in.DueDay)
-		}
-	} else {
-		setupMarketingCondition = fmt.Sprintf(
-			"dividido em %d parcelas iguais de R$ %s (%s)",
-			installments,
-			domain.FormatBRL(installmentCents),
-			domain.CentsToExtenso(installmentCents),
-		)
-	}
-
-	monthlyFeeFormatted := domain.FormatBRL(in.MonthlyFeeCents)
-	monthlyFeeExtenso := domain.CentsToExtenso(in.MonthlyFeeCents)
-
-	// Remuneração clause number matching CSS counter(clausula)
-	remuneracaoNum := 12
-	if escopo.ConteudoOrganico {
-		remuneracaoNum++
-	}
-	if escopo.TrafegoPago {
-		remuneracaoNum++
-	}
-
-	// Anexo I — Conteúdo Orgânico dynamic text
-	conteudoDesc := buildConteudoOrganicoDesc(escopo)
-
-	// Anexo I — Jornada Estratégica Inicial
-	dias := escopo.CicloEstrategicoDias
-	if dias <= 0 {
-		dias = 90
-	}
-	p1End := dias / 3
-	if p1End < 1 {
-		p1End = 1
-	}
-	p2End := (dias * 2) / 3
-	if p2End <= p1End {
-		p2End = p1End + 1
-	}
-	fase1Periodo := fmt.Sprintf("0 A %d DIAS", p1End)
-	fase2Periodo := fmt.Sprintf("%d A %d DIAS", p1End+1, p2End)
-	fase3Periodo := fmt.Sprintf("%d A %d DIAS", p2End+1, dias)
-
-	var f1Parts []string
-	f1Parts = append(f1Parts, "Organização da comunicação")
-	if hasCanais {
-		f1Parts = append(f1Parts, fmt.Sprintf("implantação do link personalizado (%s)", canaisFormatted))
-	}
-	if escopo.ConteudoOrganico {
-		f1Parts = append(f1Parts, "roteiros iniciais", "rotina de gravação")
-	}
-	if escopo.TrafegoPago {
-		f1Parts = append(f1Parts, "ativação das primeiras campanhas custeadas pela IA Infinito")
-	}
-	fase1Desc := joinPortugueseList(f1Parts) + "."
-
-	var fase2Desc, fase3Desc string
-	if escopo.TrafegoPago {
-		fase2Desc = "Análise de métricas reais de conversão, otimização de criativos e públicos no tráfego pago, ajuste fino nas abordagens e identificação dos formatos que geram maior volume de oportunidades qualificadas."
-		fase3Desc = "Concentração de esforços e verba de mídia nos canais e anúncios validados, maximizando a previsibilidade de geração de leads e oportunidades comerciais para a CONTRATANTE."
-	} else {
-		fase2Desc = "Análise de métricas reais de engajamento e conversão, otimização de pautas e criativos, ajuste fino nas abordagens e identificação dos formatos que geram maior volume de oportunidades qualificadas."
-		fase3Desc = "Concentração de esforços nos canais e formatos validados, maximizando a previsibilidade de geração de leads e oportunidades comerciais para a CONTRATANTE."
-	}
-
-	data := marketingTemplateData{
-		ClientCompanyName:        firstNonEmpty(in.ClientCompanyName, "[RAZÃO SOCIAL DA CONTRATANTE]"),
-		ClientTradeName:          strings.TrimSpace(in.ClientTradeName),
-		ClientCNPJFormatted:      firstNonEmpty(domain.FormatCNPJ(in.ClientCNPJ), "[CNPJ DA CONTRATANTE]"),
-		ClientAddress:            firstNonEmpty(in.ClientAddress, "[ENDEREÇO COMPLETO DA CONTRATANTE]"),
-		ClientRepName:            firstNonEmpty(in.ClientRepName, "[NOME DO REPRESENTANTE LEGAL]"),
-		ClientRepDocument:        formatDoc(in.ClientRepDocument),
-		ContratadaCompanyName:    contratadaCompany,
-		ContratadaCNPJDisplay:    contratadaCNPJ,
-		ContratadaAddressDisplay: contratadaAddr,
-		ContratadaRepDisplay:     contratadaRep,
-		CityForum:                in.CityForum,
-		SignatureDateFull:        formatDatePortugueseFull(in.StartDate),
-		IncludeWitnesses:         in.EffectiveIncludeWitnesses(),
-
-		Escopo: escopo,
-
+		Escopo:                  escopo,
 		LeadSubtitle:            leadSubtitle,
 		OperationModelText:      operationModelText,
 		ObjectServicesText:      objectServicesText,
 		HasCanais:               hasCanais,
 		CanaisFormatted:         canaisFormatted,
+		HasLeadsClause:          hasLeadsClause,
+		HasAnexoI:               hasAnexoI,
 		CicloEstrategicoDias:    dias,
 		CicloEstrategicoExtenso: domain.NumberToPortuguese(int64(dias)),
 		HorasGravacaoExtenso:    horasExtensoFeminino(escopo.HorasGravacaoSemanal),
 		ClientParticipationText: clientParticipation,
-
-		HasSetupFee:             hasSetupFee,
-		SetupFeeFormatted:       setupFeeFormatted,
-		SetupFeeExtenso:         setupFeeExtenso,
-		SetupMarketingCondition: setupMarketingCondition,
-		MonthlyFeeFormatted:     monthlyFeeFormatted,
-		MonthlyFeeExtenso:       monthlyFeeExtenso,
-		DueDay:                  in.DueDay,
-
-		RemuneracaoClauseNum: remuneracaoNum,
-		ConteudoOrganicoDesc: conteudoDesc,
+		RemuneracaoClauseNum:    remuneracaoNum,
+		ConteudoOrganicoDesc:    conteudoDesc,
 
 		Fase1Periodo: fase1Periodo,
 		Fase2Periodo: fase2Periodo,
@@ -435,8 +352,8 @@ func (r *RenderService) renderMarketingHTML(in domain.ContractInput) (string, er
 	}
 
 	var buf bytes.Buffer
-	if err := r.marketingTmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("execute marketing contract template: %w", err)
+	if err := r.tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("execute contract template: %w", err)
 	}
 	return buf.String(), nil
 }

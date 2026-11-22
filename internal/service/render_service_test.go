@@ -164,7 +164,7 @@ func TestRenderService_OfficialContractContentAndEscaping(t *testing.T) {
 	}
 }
 
-func TestRenderService_MarketingIAInfinito_CompleteAndPartial(t *testing.T) {
+func TestRenderService_UnifiedDynamicScope_ScenarioA_And_ScenarioB(t *testing.T) {
 	cfg := &config.Config{
 		ContratadaRazaoSocial:   "JOEL ACOSTA QUINTANA JUNIOR DESENVOLVIMENTO DE PROGRAMAS LTDA - EPP",
 		ContratadaCNPJ:          "63741075000143",
@@ -178,7 +178,76 @@ func TestRenderService_MarketingIAInfinito_CompleteAndPartial(t *testing.T) {
 	}
 
 	boolTrue := true
-	// 1. Complete marketing_ia_infinito contract
+
+	// Cenário A: Apenas serviços base/tecnologia sem marketing (sem tráfego, sem Reels, sem link, sem Anexo I)
+	baseOnly := domain.EscopoMarketing{
+		CicloEstrategicoDias:    90,
+		ServicosBaseTecnologia:  true,
+		PosicionamentoEditorial: false,
+		ConteudoOrganico:        false,
+		LinkMulticanal:          false,
+		TrafegoPago:             false,
+		CaptacaoLeads:           false,
+		QtdImagens:              0,
+		FreqImagens:             "semanais",
+		QtdReels:                0,
+		FreqReels:               "semanais",
+		DirecionamentoStories:   false,
+		HorasGravacaoSemanal:    0,
+		Canais:                  nil,
+	}
+	inA := domain.ContractInput{
+		EscopoMarketing:   &baseOnly,
+		ClientCompanyName: "Tech Base Ltda",
+		ClientTradeName:   "Tech Base",
+		ClientCNPJ:        "11222333000181",
+		ClientAddress:     "Rua 14 de Julho, 500, Campo Grande/MS",
+		ClientRepName:     "Marcos Lima",
+		ClientEmail:       "marcos@techbase.com.br",
+		ClientPhone:       "(67) 99999-1111",
+		SetupFeeCents:     0,
+		HasMonthlyFee:     &boolTrue,
+		MonthlyFeeCents:   180000,
+		DueDay:            15,
+		StartDate:         "2026-11-22",
+		CityForum:         "Campo Grande/MS",
+	}
+	htmlA, err := svc.RenderHTML(inA)
+	if err != nil {
+		t.Fatalf("RenderHTML Scenario A failed: %v", err)
+	}
+	htmlADecoded := html.UnescapeString(htmlA)
+
+	mustHaveA := []string{
+		"counter-reset: clausula;",
+		"counter-increment: clausula;",
+		"Serviços Base, Tecnologia e Automação",
+		"1.800,00",
+		"Cláusula 11",
+	}
+	for _, needle := range mustHaveA {
+		if !strings.Contains(htmlADecoded, needle) {
+			t.Errorf("Scenario A missing %q", needle)
+		}
+	}
+
+	mustOmitA := []string{
+		"TRÁFEGO PAGO E ASSUNÇÃO DE RISCO",
+		"TRÁFEGO PAGO E RISCO",
+		"CANAIS INTEGRADOS",
+		"MODELO DE CONTEÚDO E PARTICIPAÇÃO",
+		"ANEXO I · ESCOPO OPERACIONAL",
+		"Implantação / Setup",
+		"Reels",
+		"Stories",
+	}
+	for _, forbidden := range mustOmitA {
+		if strings.Contains(htmlADecoded, forbidden) {
+			t.Errorf("Scenario A must omit %q", forbidden)
+		}
+	}
+
+	// Cenário B: Serviços de Marketing habilitados com quantidades personalizadas de Imagens, Reels, canais e Tráfego Pago
 	fullEscopo := domain.DefaultEscopoMarketing()
 	fullEscopo.QtdImagens = 4
 	fullEscopo.FreqImagens = "semanais"
@@ -186,9 +255,9 @@ func TestRenderService_MarketingIAInfinito_CompleteAndPartial(t *testing.T) {
 	fullEscopo.FreqReels = "semanais"
 	fullEscopo.DirecionamentoStories = true
 	fullEscopo.HorasGravacaoSemanal = 1
+	fullEscopo.Canais = []string{"WhatsApp", "Instagram", "Facebook", "Google", "TikTok"}
 
-	inFull := domain.ContractInput{
-		ModeloContrato:    domain.ModeloMarketingIAInfinito,
+	inB := domain.ContractInput{
 		EscopoMarketing:   &fullEscopo,
 		ClientCompanyName: "Clínica Exemplo Ltda",
 		ClientTradeName:   "Clínica Exemplo",
@@ -204,87 +273,34 @@ func TestRenderService_MarketingIAInfinito_CompleteAndPartial(t *testing.T) {
 		StartDate:         "2026-11-22",
 		CityForum:         "Campo Grande/MS",
 	}
-	htmlFull, err := svc.RenderHTML(inFull)
+	htmlB, err := svc.RenderHTML(inB)
 	if err != nil {
-		t.Fatalf("RenderHTML marketing full failed: %v", err)
+		t.Fatalf("RenderHTML Scenario B failed: %v", err)
 	}
+	htmlBDecoded := html.UnescapeString(htmlB)
 
-	mustHaveFull := []string{
+	mustHaveB := []string{
 		"counter-reset: clausula;",
 		"counter-increment: clausula;",
 		"JOEL ACOSTA QUINTANA JUNIOR DESENVOLVIMENTO DE PROGRAMAS LTDA - EPP",
 		"63.741.075/0001-43",
 		"Joel Acosta Quintana Junior",
 		"Clínica Exemplo",
-		"TRÁFEGO PAGO, INVESTIMENTO E ASSUNÇÃO DE RISCO",
+		"TRÁFEGO PAGO E ASSUNÇÃO DE RISCO PELA CONTRATADA",
 		"Assunção Integral do Investimento e Risco pela Contratada",
-		"IMPLANTAÇÃO / SETUP",
+		"Implantação / Setup",
 		"1.500,00",
 		"2.500,00",
 		"WhatsApp, Instagram, Facebook, Google e TikTok",
+		"ANEXO I · ESCOPO OPERACIONAL",
 		"criação de 4 (quatro) imagens/artes semanais",
 		"edição de até 3 (três) Reels semanais + direcionamento de Stories",
 		"Campo Grande/MS, 22 de novembro de 2026.",
 		"Cláusula 14",
 	}
-	htmlFullDecoded := html.UnescapeString(htmlFull)
-	for _, needle := range mustHaveFull {
-		if !strings.Contains(htmlFullDecoded, needle) {
-			t.Errorf("full marketing contract missing %q", needle)
-		}
-	}
-
-	// 2. Partial marketing_ia_infinito contract (no setup, no paid traffic, no link multicanal, 8 monthly images, 0 reels, no stories)
-	partialEscopo := domain.EscopoMarketing{
-		CicloEstrategicoDias:    90,
-		PosicionamentoEditorial: true,
-		ConteudoOrganico:        true,
-		LinkMulticanal:          false,
-		TrafegoPago:             false,
-		CaptacaoLeads:           true,
-		QtdImagens:              8,
-		FreqImagens:             "mensais",
-		QtdReels:                0,
-		FreqReels:               "semanais",
-		DirecionamentoStories:   false,
-		HorasGravacaoSemanal:    2,
-		Canais:                  []string{"WhatsApp"},
-	}
-	inPartial := inFull
-	inPartial.EscopoMarketing = &partialEscopo
-	inPartial.SetupFeeCents = 0
-
-	htmlPartial, err := svc.RenderHTML(inPartial)
-	if err != nil {
-		t.Fatalf("RenderHTML marketing partial failed: %v", err)
-	}
-
-	mustHavePartial := []string{
-		"criação de 8 (oito) imagens/artes mensais",
-		"orientação de gravação (2h/semana em bloco)",
-		"Cláusula 13",
-		"2.500,00",
-	}
-	for _, needle := range mustHavePartial {
-		if !strings.Contains(htmlPartial, needle) {
-			t.Errorf("partial marketing contract missing %q", needle)
-		}
-	}
-
-	mustOmitPartial := []string{
-		"TRÁFEGO PAGO, INVESTIMENTO E ASSUNÇÃO DE RISCO",
-		"TRÁFEGO PAGO E RISCO",
-		"CANAIS INTEGRADOS",
-		"IMPLANTAÇÃO / SETUP",
-		"Implantação / Setup:",
-		"com verba de tráfego pago já assumida pela CONTRATADA",
-		"Custear integralmente a verba de tráfego pago",
-		"direcionamento de Stories",
-		"Reels",
-	}
-	for _, forbidden := range mustOmitPartial {
-		if strings.Contains(htmlPartial, forbidden) {
-			t.Errorf("partial marketing contract must omit %q", forbidden)
+	for _, needle := range mustHaveB {
+		if !strings.Contains(htmlBDecoded, needle) {
+			t.Errorf("Scenario B missing %q", needle)
 		}
 	}
 }

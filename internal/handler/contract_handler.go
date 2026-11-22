@@ -69,7 +69,7 @@ func (h *ContractHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	rawJSON, _ := json.Marshal(in)
 	escopoJSON := "{}"
-	if in.ModeloContrato == domain.ModeloMarketingIAInfinito && in.EscopoMarketing != nil {
+	if in.EscopoMarketing != nil {
 		if b, err := json.Marshal(in.EscopoMarketing); err == nil {
 			escopoJSON = string(b)
 		}
@@ -160,7 +160,7 @@ func (h *ContractHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	rawJSON, _ := json.Marshal(in)
 	escopoJSON := "{}"
-	if in.ModeloContrato == domain.ModeloMarketingIAInfinito && in.EscopoMarketing != nil {
+	if in.EscopoMarketing != nil {
 		if b, err := json.Marshal(in.EscopoMarketing); err == nil {
 			escopoJSON = string(b)
 		}
@@ -224,7 +224,7 @@ func (h *ContractHandler) generateAndStorePDF(r *http.Request, c *domain.Contrac
 	if in.ModeloContrato == "" && c.ModeloContrato != "" {
 		in.ModeloContrato = c.ModeloContrato
 	}
-	if in.ModeloContrato == domain.ModeloMarketingIAInfinito && in.EscopoMarketing == nil && c.EscopoJSON != "" && c.EscopoJSON != "{}" {
+	if in.EscopoMarketing == nil && c.EscopoJSON != "" && c.EscopoJSON != "{}" {
 		var escopo domain.EscopoMarketing
 		if err := json.Unmarshal([]byte(c.EscopoJSON), &escopo); err == nil {
 			in.EscopoMarketing = &escopo

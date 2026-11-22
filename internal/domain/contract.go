@@ -27,10 +27,11 @@ const (
 	ModeloMarketingIAInfinito = "marketing_ia_infinito"
 )
 
-// EscopoMarketing holds the dynamic scope configuration for the marketing_ia_infinito contract template.
+// EscopoMarketing holds the dynamic scope configuration for the unified IA Infinito contract.
 type EscopoMarketing struct {
 	CicloEstrategicoDias int `json:"ciclo_estrategico_dias"`
 
+	ServicosBaseTecnologia  bool `json:"servicos_base_tecnologia"`
 	PosicionamentoEditorial bool `json:"posicionamento_editorial"`
 	ConteudoOrganico        bool `json:"conteudo_organico"`
 	LinkMulticanal          bool `json:"link_multicanal"`
@@ -47,10 +48,11 @@ type EscopoMarketing struct {
 	Canais []string `json:"canais"`
 }
 
-// DefaultEscopoMarketing returns the default full-scope configuration for IA Infinito Marketing & Traffic contracts.
+// DefaultEscopoMarketing returns the default scope configuration (preserving full backward compatibility for legacy contracts).
 func DefaultEscopoMarketing() EscopoMarketing {
 	return EscopoMarketing{
 		CicloEstrategicoDias:    90,
+		ServicosBaseTecnologia:  false,
 		PosicionamentoEditorial: true,
 		ConteudoOrganico:        true,
 		LinkMulticanal:          true,
@@ -62,7 +64,7 @@ func DefaultEscopoMarketing() EscopoMarketing {
 		FreqReels:               "semanais",
 		DirecionamentoStories:   true,
 		HorasGravacaoSemanal:    1,
-		Canais:                  []string{"WhatsApp", "Instagram", "Facebook", "Google", "TikTok"},
+		Canais:                  []string{"WhatsApp", "Facebook", "Instagram", "Google", "TikTok"},
 	}
 }
 
@@ -218,11 +220,6 @@ func (in *ContractInput) Validate(requireStrict bool) error {
 	if in.DueDay != 0 && (in.DueDay < 1 || in.DueDay > 31) {
 		return errors.New("dia de vencimento deve estar entre 1 e 31")
 	}
-	if requireStrict && in.ModeloContrato == ModeloMarketingIAInfinito {
-		if !in.EffectiveHasMonthlyFee() || in.MonthlyFeeCents <= 0 {
-			return errors.New("valor da mensalidade recorrente é obrigatório para o modelo Marketing IA Infinito")
-		}
-	}
 	return nil
 }
 
@@ -321,16 +318,12 @@ func (in *ContractInput) EffectiveSetupPaymentMethod() string {
 
 // Normalize cleans and applies defaults to ContractInput.
 func (in *ContractInput) Normalize(defaultForum string) {
-	if strings.TrimSpace(in.ModeloContrato) != ModeloMarketingIAInfinito {
-		in.ModeloContrato = ModeloPadrao
-	} else {
-		in.ModeloContrato = ModeloMarketingIAInfinito
-		if in.EscopoMarketing == nil {
-			def := DefaultEscopoMarketing()
-			in.EscopoMarketing = &def
-		}
-		in.EscopoMarketing.Normalize()
+	in.ModeloContrato = ModeloPadrao
+	if in.EscopoMarketing == nil {
+		def := DefaultEscopoMarketing()
+		in.EscopoMarketing = &def
 	}
+	in.EscopoMarketing.Normalize()
 	in.ClientCompanyName = strings.TrimSpace(in.ClientCompanyName)
 	in.ClientTradeName = strings.TrimSpace(in.ClientTradeName)
 	in.ClientCNPJ = OnlyDigits(in.ClientCNPJ)

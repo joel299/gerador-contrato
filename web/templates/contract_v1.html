@@ -79,9 +79,7 @@
     }
 
     @media print {
-      .screen-header {
-        display: none !important;
-      }
+      .screen-header,
       .screen-footer {
         display: none !important;
       }
@@ -170,6 +168,59 @@
       border-bottom: 1.5px solid #0b7eb0;
       break-after: avoid;
       page-break-after: avoid;
+    }
+
+    /* Numeração automática de cláusulas via CSS Counters */
+    .clauses-container {
+      counter-reset: clausula;
+    }
+
+    h2.clause-heading {
+      counter-increment: clausula;
+      counter-reset: subitem;
+      font-size: 11.2pt;
+      font-weight: 800;
+      color: #0d1114;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin: 20px 0 10px;
+      padding-bottom: 4px;
+      border-bottom: 1.5px solid #0b7eb0;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    h2.clause-heading::before {
+      content: counter(clausula) ". ";
+    }
+
+    p.clause-item {
+      counter-increment: subitem;
+      margin: 0 0 9px;
+      text-align: justify;
+    }
+
+    p.clause-item::before {
+      content: counter(clausula) "." counter(subitem) ". ";
+      font-weight: 700;
+      color: #0d1114;
+    }
+
+    .callout-risk {
+      counter-increment: subitem;
+      background: #eefaf4;
+      border-left: 3.5px solid #147a55;
+      padding: 10px 12px;
+      margin: 8px 0 10px;
+      text-align: justify;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .callout-risk::before {
+      content: counter(clausula) "." counter(subitem) ". ";
+      font-weight: 800;
+      color: #0d1114;
     }
 
     .parties-box {
@@ -279,7 +330,7 @@
 
   <p class="eyebrow">QUADRO RESUMO</p>
   <h1 class="doc-title">Contrato de Prestação de Serviços</h1>
-  <p class="doc-lead">Estratégia de marca, produção de conteúdo, link personalizado multicanal, gestão e investimento em mídia paga e geração de oportunidades comerciais.</p>
+  <p class="doc-lead">{{.LeadSubtitle}}</p>
 
   <table class="summary-table">
     <thead>
@@ -291,7 +342,7 @@
     <tbody>
       <tr>
         <td>CONTRATANTE</td>
-        <td><strong>{{.ClientCompanyName}}</strong> — CNPJ {{.ClientCNPJFormatted}} e dados cadastrais completos na qualificação abaixo.</td>
+        <td>{{if .ClientTradeName}}<strong>{{.ClientTradeName}}</strong> — Razão social: <strong>{{.ClientCompanyName}}</strong>, CNPJ {{.ClientCNPJFormatted}} e dados cadastrais completos na qualificação abaixo.{{else}}<strong>{{.ClientCompanyName}}</strong> — CNPJ {{.ClientCNPJFormatted}} e dados cadastrais completos na qualificação abaixo.{{end}}</td>
       </tr>
       <tr>
         <td>CONTRATADA</td>
@@ -299,31 +350,37 @@
       </tr>
       <tr>
         <td>MODELO DE OPERAÇÃO</td>
-        <td>Prestação recorrente de serviços de posicionamento estratégico, conteúdo orgânico, link personalizado multicanal e operação de tráfego pago.</td>
+        <td>{{.OperationModelText}}</td>
       </tr>
+      {{if and .Escopo.LinkMulticanal .HasCanais}}
       <tr>
         <td>CANAIS INTEGRADOS</td>
-        <td>Link personalizado centralizando os canais oficiais da CONTRATANTE: <strong>WhatsApp, Facebook, Instagram, Google e TikTok</strong>.</td>
+        <td>Link personalizado centralizando os canais oficiais da CONTRATANTE: <strong>{{.CanaisFormatted}}</strong>.</td>
       </tr>
+      {{end}}
+      {{if .HasAnexoI}}
       <tr>
         <td>CICLO ESTRATÉGICO INICIAL</td>
-        <td>90 (noventa) dias: estruturação, testes de validação e escala dos formatos com maior conversão comercial.</td>
+        <td>{{.CicloEstrategicoDias}} ({{.CicloEstrategicoExtenso}}) dias: estruturação, testes de validação e escala dos formatos com maior conversão comercial.</td>
       </tr>
+      {{end}}
       <tr>
         <td>PARTICIPAÇÃO DA CONTRATANTE</td>
-        <td>Disponibilidade de aproximadamente 1 (uma) hora por semana para gravação em bloco, validação de materiais e atendimento comercial aos interessados.</td>
+        <td>{{.ClientParticipationText}}</td>
       </tr>
+      {{if .Escopo.TrafegoPago}}
       <tr>
-        <td>TRÁFEGO PAGO E INVESTIMENTO</td>
-        <td>Operação e investimento financeiro em mídia paga integralmente assumidos pela CONTRATADA, ficando todo o risco operacional e financeiro dos anúncios sob responsabilidade exclusiva da CONTRATADA.</td>
+        <td>TRÁFEGO PAGO E RISCO</td>
+        <td>Operação e investimento financeiro em mídia paga integralmente assumidos pela CONTRATADA (IA Infinito), ficando todo o risco operacional e financeiro dos anúncios sob responsabilidade exclusiva da CONTRATADA, sem custo adicional de verba de mídia para a CONTRATANTE.</td>
       </tr>
+      {{end}}
       <tr>
         <td>VIGÊNCIA CONTRATUAL</td>
         <td>Prazo indeterminado, podendo ser rescindido mediante aviso prévio por escrito com antecedência mínima de 30 (trinta) dias.</td>
       </tr>
       <tr>
         <td>INVESTIMENTO</td>
-        <td>Implantação / Projeto: {{.SetupSummaryText}} — {{.MonthlySummaryText}}.</td>
+        <td>{{if .HasSetupFee}}Implantação / Setup: {{.SetupSummaryText}} — {{end}}{{.MonthlySummaryText}}.</td>
       </tr>
     </tbody>
   </table>
@@ -336,148 +393,210 @@
 
   <p class="clause-p">As partes acima qualificadas têm entre si justo e contratado o presente Instrumento Particular de Prestação de Serviços, que se regerá pelas cláusulas e condições seguintes, obrigando-se por si e seus sucessores ao seu fiel cumprimento.</p>
 
-  <h2 class="section-heading">1. OBJETO DO CONTRATO</h2>
-  <p class="clause-p">1.1. O presente instrumento tem por objeto a prestação, pela CONTRATADA em favor da CONTRATANTE, de serviços especializados de estratégia de posicionamento de marca, planejamento e edição de conteúdo digital, criação e manutenção de link personalizado multicanal, gestão e investimento direto em campanhas de tráfego pago e estruturação da jornada de captação de oportunidades comerciais, nos termos deste contrato e do Anexo I.</p>
-  <p class="clause-p">1.2. A prestação dos serviços de posicionamento, conteúdo e estruturação comercial possui natureza estratégica e criativa, comprometendo-se a CONTRATADA a empregar as melhores práticas técnicas disponíveis no mercado, sem garantia de volume fixo de vendas finais ou fechamentos que dependam do atendimento interno da CONTRATANTE.</p>
-  <p class="clause-p">1.3. Quaisquer demandas ou entregáveis não previstos expressamente neste instrumento ou em seu Anexo I serão tratados como serviços adicionais e dependerão de orçamento e aprovação formal prévia entre as partes.</p>
+  <div class="clauses-container">
+    <!-- OBJETO DO CONTRATO -->
+    <h2 class="clause-heading">OBJETO DO CONTRATO</h2>
+    <p class="clause-item">O presente instrumento tem por objeto a prestação, pela CONTRATADA em favor da CONTRATANTE, de {{.ObjectServicesText}}, nos termos deste contrato{{if .HasAnexoI}} e do Anexo I{{end}}.</p>
+    <p class="clause-item">A prestação dos serviços contratados possui natureza técnica, estratégica e criativa, comprometendo-se a CONTRATADA a empregar as melhores práticas disponíveis no mercado, sem garantia de volume fixo de vendas finais ou fechamentos que dependam do atendimento interno da CONTRATANTE.</p>
+    <p class="clause-item">Quaisquer demandas ou entregáveis não previstos expressamente neste instrumento{{if .HasAnexoI}} ou em seu Anexo I{{end}} serão tratados como serviços adicionais e dependerão de orçamento e aprovação formal prévia entre as partes.</p>
 
-  <h2 class="section-heading">2. ESCOPO DA OPERAÇÃO</h2>
-  <p class="clause-p">2.1. O escopo recorrente da operação compreende, de forma integrada e contínua:</p>
-  <ul class="clause-list">
-    <li><strong>Posicionamento e Comunicação:</strong> Estruturação da comunicação institucional e comercial da CONTRATANTE para uma presença clara, consultiva e orientada à geração de negócios, respeitando a identidade da marca.</li>
-    <li><strong>Link Personalizado Multicanal:</strong> Desenvolvimento, configuração e manutenção de página de acesso rápido e link personalizado reunindo os canais oficiais da CONTRATANTE, contemplando <strong>WhatsApp, Facebook, Instagram, Google e TikTok</strong>.</li>
-    <li><strong>Planejamento e Produção de Conteúdo:</strong> Elaboração de calendário editorial, pautas, roteiros, textos de apoio, orientação de gravação, edição e publicação dos conteúdos previstos no Anexo I.</li>
-    <li><strong>Tráfego Pago com Investimento e Risco da Contratada:</strong> Planejamento, criação, gestão, otimização e custeio integral da verba de mídia paga nas plataformas aprovadas, assumindo a CONTRATADA todo o investimento financeiro e o risco operacional das campanhas patrocinadas.</li>
-    <li><strong>Jornada de Captação de Oportunidades:</strong> Estruturação do fluxo entre os anúncios, o link personalizado, os canais de atendimento (como WhatsApp e formulários) e a equipe comercial da CONTRATANTE.</li>
-    <li><strong>Acompanhamento de Desempenho:</strong> Monitoramento dos indicadores disponíveis e apresentação periódica de relatórios com aprendizados e recomendações de evolução.</li>
-  </ul>
-  <p class="clause-p">2.2. O detalhamento operacional, a frequência das entregas e os limites do escopo constam no Anexo I, que passa a integrar este contrato para todos os efeitos legais.</p>
-
-  <h2 class="section-heading">3. MODELO DE CONTEÚDO E PARTICIPAÇÃO DA CONTRATANTE</h2>
-  <p class="clause-p">3.1. A linha editorial será construída a partir da experiência prática, dos diferenciais e da rotina da equipe da CONTRATANTE. A CONTRATADA fornecerá previamente as pautas, roteiros, ganchos de abertura e orientações de enquadramento para viabilizar gravações ágeis.</p>
-  <p class="clause-p">3.2. A CONTRATANTE disponibilizará, como referência operacional, aproximadamente 1 (uma) hora por semana para gravação em bloco, em dia e horário previamente alinhados entre as equipes.</p>
-  <p class="clause-p">3.3. Caberá à CONTRATADA realizar a edição completa dos materiais captados dentro do escopo, abrangendo cortes, dinamismo visual, inserção de textos de apoio, identidade gráfica, legendas e agendamento ou entrega para publicação.</p>
-  <p class="clause-p">3.4. Caso a CONTRATANTE deixe de disponibilizar os porta-vozes, informações técnicas ou arquivos gravados nas datas combinadas, o cronograma de publicações será ajustado proporcionalmente, sem que isso configure atraso ou descumprimento por parte da CONTRATADA.</p>
-
-  <h2 class="section-heading">4. APROVAÇÃO E REVISÕES DE MATERIAIS</h2>
-  <p class="clause-p">4.1. Peças publicitárias, roteiros e conteúdos que exijam validação técnica, comercial ou institucional da CONTRATANTE serão encaminhados para análise prévia antes da veiculação.</p>
-  <p class="clause-p">4.2. A CONTRATANTE disporá do prazo operacional de até 2 (dois) dias úteis para aprovar os materiais enviados ou solicitar ajustes consolidados. A ausência de manifestação dentro desse prazo poderá ocasionar o deslocamento do calendário editorial.</p>
-  <p class="clause-p">4.3. Estão incluídas até 2 (duas) rodadas consolidadas de ajustes por peça antes da aprovação definitiva. Solicitações que impliquem alteração integral de tema, mudança de briefing após a edição ou criação de nova peça serão tratadas como demanda adicional.</p>
-  <p class="clause-p">4.4. A aprovação expressa da CONTRATANTE atesta a exatidão das informações comerciais, técnicas, institucionais e regulatórias aplicáveis ao seu segmento de atuação.</p>
-
-  <h2 class="section-heading">5. TRÁFEGO PAGO E ASSUNÇÃO DE RISCO PELA CONTRATADA</h2>
-  <p class="clause-p">5.1. A CONTRATADA será integralmente responsável pelo planejamento, configuração, gestão, otimização e custeio financeiro das campanhas de tráfego pago vinculadas à operação contratada.</p>
-  <p class="clause-p">5.2. Todo o investimento financeiro aplicado diretamente nas plataformas de anúncios correrá por conta exclusiva da CONTRATADA, não havendo cobrança adicional de verba de mídia à CONTRATANTE além da remuneração mensal ajustada neste contrato.</p>
-  <p class="clause-p">5.3. Em decorrência da assunção do investimento publicitário pela CONTRATADA, todo o risco financeiro e operacional relativo à aplicação da verba de mídia, variações de leilão, custo por clique ou desempenho financeiro dos anúncios fica integralmente sob responsabilidade da CONTRATADA.</p>
-  <p class="clause-p">5.4. A CONTRATADA definirá de forma autônoma a distribuição de orçamento, os períodos de veiculação, os testes de público e a escala das campanhas, visando maximizar a geração de oportunidades qualificadas para a CONTRATANTE.</p>
-  <p class="clause-p">5.5. Eventuais bloqueios técnicos, instabilidades, revisões de políticas ou indisponibilidades impostas pelas próprias plataformas de terceiros (Meta, Google, TikTok e correlatas) serão geridos tecnicamente pela CONTRATADA para restabelecimento da operação, não caracterizando infração contratual.</p>
-
-  <h2 class="section-heading">6. LINK PERSONALIZADO, LEADS E ATENDIMENTO COMERCIAL</h2>
-  <p class="clause-p">6.1. A CONTRATADA estruturará e manterá ativo o link personalizado da CONTRATANTE contendo os acessos diretos para os canais de mídias sociais e contato: <strong>WhatsApp, Facebook, Instagram, Google e TikTok</strong>, além de configurar os fluxos de entrada de contatos provenientes das campanhas.</p>
-  <p class="clause-p">6.2. A atuação da CONTRATADA encerra-se na atração do público e no direcionamento do interessado até os canais oficiais da CONTRATANTE. O atendimento comercial, a qualificação final, a elaboração de orçamentos ou propostas, a negociação e o fechamento das vendas são de responsabilidade exclusiva da CONTRATANTE.</p>
-  <p class="clause-p">6.3. A CONTRATANTE compromete-se a manter equipe treinada e estrutura de atendimento ágil para responder aos contatos recebidos em tempo hábil, preservando a efetividade das campanhas custeadas pela CONTRATADA.</p>
-  <p class="clause-p">6.4. A CONTRATANTE compartilhará periodicamente com a CONTRATADA as informações sobre o andamento comercial dos contatos recebidos (como volume de atendimentos, propostas enviadas e vendas concretizadas), permitindo a otimização contínua das campanhas.</p>
-
-  <h2 class="section-heading">7. OBRIGAÇÕES DA CONTRATADA</h2>
-  <ul class="clause-list">
-    <li>Executar todos os serviços contratados com diligência técnica, organização e padrão visual alinhado ao posicionamento da CONTRATANTE.</li>
-    <li>Desenvolver, configurar e manter atualizado o link personalizado com os canais WhatsApp, Facebook, Instagram, Google e TikTok.</li>
-    <li>Assumir integralmente o investimento financeiro e os riscos operacionais referentes às campanhas de tráfego pago previstas neste contrato.</li>
-    <li>Manter a CONTRATANTE informada sobre o andamento do cronograma, necessidades de gravação e evoluções das campanhas.</li>
-    <li>Zelar pelo sigilo das credenciais, acessos e informações comerciais fornecidas pela CONTRATANTE, utilizando-os estritamente na execução deste contrato.</li>
-    <li>Apresentar relatórios periódicos de desempenho contendo os indicadores da operação e recomendações estratégicas.</li>
-  </ul>
-
-  <h2 class="section-heading">8. OBRIGAÇÕES DA CONTRATANTE</h2>
-  <ul class="clause-list">
-    <li>Fornecer informações fidedignas e atualizadas sobre seus produtos, serviços, condições comerciais, diferenciais e canais oficiais de atendimento.</li>
-    <li>Conceder os acessos, permissões administrativas e links necessários à integração dos canais WhatsApp, Facebook, Instagram, Google e TikTok.</li>
-    <li>Disponibilizar equipe e agenda semanal para a realização das gravações em bloco e validação dos materiais dentro dos prazos estipulados.</li>
-    <li>Realizar o atendimento comercial tempestivo de todos os interessados e oportunidades encaminhados pelos canais digitais e campanhas.</li>
-    <li>Manter a regularidade fiscal, cadastral e regulatória de suas atividades empresariais, responsabilizando-se pela legalidade das ofertas divulgadas.</li>
-    <li>Efetuar pontualmente o pagamento da remuneração contratada nos valores e datas estabelecidos neste instrumento.</li>
-  </ul>
-
-  <h2 class="section-heading">9. ITENS NÃO INCLUÍDOS NO ESCOPO</h2>
-  <p class="clause-p">9.1. Salvo contratação específica mediante aditivo ou proposta complementar aprovada pelas partes, não estão contemplados no valor mensal deste contrato:</p>
-  <ul class="clause-list">
-    <li>Desenvolvimento completo de novo website institucional, lojas virtuais, sistemas internos ou softwares sob medida.</li>
-    <li>Produção audiovisual presencial com deslocamento de equipe externa, locação de estúdios, contratação de atores ou influenciadores digitais.</li>
-    <li>Serviços de fotografia profissional presencial, criação de identidade visual completa do zero ou produção de materiais gráficos impressos.</li>
-    <li>Contratação de ferramentas externas de gestão comercial (CRM), plataformas de disparo pago de mensagens ou licenças de softwares de uso interno da CONTRATANTE.</li>
-    <li>Execução direta de atendimento comercial, negociação ou fechamento de vendas em nome da CONTRATANTE.</li>
-  </ul>
-
-  <h2 class="section-heading">10. INDICADORES E RELATÓRIOS DE DESEMPENHO</h2>
-  <p class="clause-p">10.1. A operação será acompanhada por meio de indicadores de alcance, visualizações, cliques no link personalizado, conversas iniciadas, contatos gerados e vendas informadas pela CONTRATANTE.</p>
-  <p class="clause-p">10.2. Os relatórios serão consolidados mensalmente pela CONTRATADA, servindo de base para os ajustes de pauta, criativos e direcionamento das campanhas de tráfego pago.</p>
-
-  <h2 class="section-heading">11. PROTEÇÃO DE DADOS PESSOAIS (LGPD)</h2>
-  <p class="clause-p">11.1. As partes comprometem-se a cumprir integralmente a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 — LGPD) e demais normas aplicáveis à privacidade e segurança da informação.</p>
-  <p class="clause-p">11.2. No tratamento de dados de clientes e interessados captados pelos canais da CONTRATANTE, esta figurará como Controladora e a CONTRATADA atuará como Operadora, limitando-se a tratar os dados estritamente para a execução do objeto contratual.</p>
-  <p class="clause-p">11.3. É vedado à CONTRATADA comercializar, ceder ou utilizar dados pessoais obtidos em razão deste contrato para finalidades alheias à operação da CONTRATANTE.</p>
-  <p class="clause-p">11.4. Cada parte adotará medidas técnicas e administrativas aptas a proteger os dados contra acessos não autorizados, comprometendo-se a comunicar imediatamente a outra parte em caso de qualquer incidente de segurança relevante.</p>
-
-  <h2 class="section-heading">12. CONFIDENCIALIDADE</h2>
-  <p class="clause-p">12.1. São consideradas confidenciais todas as informações estratégicas, comerciais, financeiras, operacionais, listas de contatos, métricas internas, metodologias e credenciais compartilhadas entre as partes durante a vigência deste instrumento.</p>
-  <p class="clause-p">12.2. As partes obrigam-se a manter sigilo absoluto sobre tais informações, não as divulgando a terceiros sem autorização prévia por escrito, exceto quando exigido por determinação legal ou judicial.</p>
-  <p class="clause-p">12.3. A obrigação de confidencialidade permanecerá válida pelo prazo de 5 (cinco) anos após o encerramento deste contrato.</p>
-
-  <h2 class="section-heading">13. PROPRIEDADE INTELECTUAL</h2>
-  <p class="clause-p">13.1. Mediante o pagamento regular das parcelas devidas, a CONTRATANTE deterá o direito de uso definitivo sobre os vídeos editados, artes, textos e materiais finais produzidos exclusivamente para sua marca durante a vigência contratual.</p>
-  <p class="clause-p">13.2. Permanecem de titularidade exclusiva da CONTRATADA suas metodologias de trabalho, processos internos, estruturas de campanhas, modelos de roteiros, know-how e ferramentas proprietárias utilizadas na prestação dos serviços.</p>
-  <p class="clause-p">13.3. Arquivos abertos de edição e projetos-fonte não integram a entrega padrão, salvo ajuste expresso em contrário entre as partes.</p>
-
-  <h2 class="section-heading">14. REMUNERAÇÃO E CONDIÇÕES DE PAGAMENTO</h2>
-  <p class="clause-p">14.1. Pelos serviços prestados, incluindo a gestão e o custeio integral do investimento em tráfego pago assumido pela CONTRATADA, a CONTRATANTE pagará os seguintes valores:</p>
-
-  <table class="finance-table">
-    <thead>
-      <tr>
-        <th>ITEM FINANCEIRO</th>
-        <th>VALOR / CONDIÇÃO</th>
-        <th>FORMA DE PAGAMENTO</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Implantação / Projeto</td>
-        <td>{{.SetupClauseValueText}}</td>
-        <td>{{.SetupPaymentForm}}</td>
-      </tr>
-      {{if .HasMonthlyFee}}
-      <tr>
-        <td>Mensalidade Recorrente</td>
-        <td>R$ {{.MonthlyFeeFormatted}} ({{.MonthlyFeeExtenso}})</td>
-        <td>{{.MonthlyPaymentForm}}</td>
-      </tr>
-      <tr>
-        <td>Dia de Vencimento</td>
-        <td>Todo dia {{.DueDay}} de cada mês</td>
-        <td>Início da cobrança em {{.BillingStartDateDisplay}}</td>
-      </tr>
+    <!-- ESCOPO DA OPERAÇÃO -->
+    <h2 class="clause-heading">ESCOPO DA OPERAÇÃO</h2>
+    <p class="clause-item">O escopo da operação compreende, de forma integrada:</p>
+    <ul class="clause-list">
+      {{if .Escopo.ServicosBaseTecnologia}}
+      <li><strong>Serviços Base, Tecnologia e Automação:</strong> Implantação, configuração, integração de sistemas, automações operacionais e suporte técnico contínuo conforme alinhamento entre as partes.</li>
       {{end}}
-    </tbody>
-  </table>
+      {{if .Escopo.PosicionamentoEditorial}}
+      <li><strong>Posicionamento e Linha Editorial:</strong> Estruturação da comunicação institucional e comercial da CONTRATANTE para uma presença clara, consultiva e orientada à geração de negócios, respeitando a identidade da marca.</li>
+      {{end}}
+      {{if and .Escopo.LinkMulticanal .HasCanais}}
+      <li><strong>Link Personalizado Multicanal:</strong> Desenvolvimento, configuração e manutenção de página de acesso rápido e link personalizado reunindo os canais oficiais da CONTRATANTE, contemplando <strong>{{.CanaisFormatted}}</strong>.</li>
+      {{end}}
+      {{if .Escopo.ConteudoOrganico}}
+      <li><strong>Planejamento e Produção de Conteúdo Orgânico:</strong> Elaboração de calendário editorial, pautas, roteiros, textos de apoio, orientação de gravação, edição e publicação dos conteúdos previstos no Anexo I.</li>
+      {{end}}
+      {{if .Escopo.TrafegoPago}}
+      <li><strong>Tráfego Pago com Investimento e Risco da Contratada:</strong> Planejamento, criação, gestão, otimização e custeio integral da verba de mídia paga nas plataformas aprovadas, assumindo a CONTRATADA todo o investimento financeiro e o risco operacional das campanhas patrocinadas.</li>
+      {{end}}
+      {{if .Escopo.CaptacaoLeads}}
+      <li><strong>Captação e Encaminhamento de Leads:</strong> Estruturação do fluxo de captação e encaminhamento de oportunidades comerciais até os canais de atendimento (como WhatsApp e formulários) e equipe comercial da CONTRATANTE, com relatório mensal de performance.</li>
+      {{end}}
+      <li><strong>Acompanhamento de Desempenho:</strong> Monitoramento dos indicadores disponíveis e apresentação periódica de relatórios com aprendizados e recomendações de evolução.</li>
+    </ul>
+    {{if .HasAnexoI}}
+    <p class="clause-item">O detalhamento operacional, a frequência das entregas e os limites do escopo constam no Anexo I, que passa a integrar este contrato para todos os efeitos legais.</p>
+    {{end}}
 
-  {{if not .HasMonthlyFee}}
-  <p class="clause-p"><strong>14.1.1. Ausência de Mensalidade Recorrente:</strong> As partes ajustam expressamente que <strong>não haverá cobrança de mensalidade recorrente</strong> neste instrumento, restringindo-se a remuneração devida pela CONTRATANTE exclusivamente ao valor de implantação/projeto pactuado na tabela acima.</p>
-  {{end}}
+    {{if .Escopo.ConteudoOrganico}}
+    <!-- MODELO DE CONTEÚDO E PARTICIPAÇÃO DA CONTRATANTE -->
+    <h2 class="clause-heading">MODELO DE CONTEÚDO E PARTICIPAÇÃO DA CONTRATANTE</h2>
+    <p class="clause-item">A linha editorial será construída a partir da experiência prática, dos diferenciais e da rotina da equipe da CONTRATANTE. A CONTRATADA fornecerá previamente as pautas, roteiros, ganchos de abertura e orientações de enquadramento para viabilizar gravações ágeis.</p>
+    {{if gt .Escopo.HorasGravacaoSemanal 0}}
+    <p class="clause-item">A CONTRATANTE disponibilizará, como referência operacional, aproximadamente {{.Escopo.HorasGravacaoSemanal}} ({{.HorasGravacaoExtenso}}) {{if eq .Escopo.HorasGravacaoSemanal 1}}hora{{else}}horas{{end}} por semana para gravação em bloco, em dia e horário previamente alinhados entre as equipes.</p>
+    {{end}}
+    <p class="clause-item">Caberá à CONTRATADA realizar a edição completa dos materiais captados dentro do escopo, abrangendo cortes, dinamismo visual, inserção de textos de apoio, identidade gráfica, legendas e agendamento ou entrega para publicação.</p>
+    <p class="clause-item">Caso a CONTRATANTE deixe de disponibilizar os porta-vozes, informações técnicas ou arquivos gravados nas datas combinadas, o cronograma de publicações será ajustado proporcionalmente, sem que isso configure atraso ou descumprimento por parte da CONTRATADA.</p>
+    {{end}}
 
-  <p class="clause-p">14.2. O atraso no pagamento de qualquer parcela sujeitará a CONTRATANTE ao pagamento de multa moratória de 2% (dois por cento) sobre o valor devido, acrescida de juros de mora de 1% (um por cento) ao mês, calculados pro rata die, além de correção monetária pelo índice IPCA/IBGE.</p>
-  <p class="clause-p">14.3. Persistindo a inadimplência por período superior a 10 (dez) dias após notificação formal, a CONTRATADA poderá suspender imediatamente a veiculação das campanhas de tráfego pago custeadas por ela e as entregas editoriais até a efetiva regularização financeira.</p>
+    <!-- APROVAÇÃO E REVISÕES DE MATERIAIS -->
+    <h2 class="clause-heading">APROVAÇÃO E REVISÕES DE MATERIAIS</h2>
+    <p class="clause-item">Entregas, peças e materiais que exijam validação técnica, comercial ou institucional da CONTRATANTE serão encaminhados para análise prévia antes da veiculação ou implantação.</p>
+    <p class="clause-item">A CONTRATANTE disporá do prazo operacional de até 2 (dois) dias úteis para aprovar os materiais enviados ou solicitar ajustes consolidados. A ausência de manifestação dentro desse prazo poderá ocasionar o deslocamento do cronograma.</p>
+    <p class="clause-item">Estão incluídas até 2 (duas) rodadas consolidadas de ajustes por entrega antes da aprovação definitiva. Solicitações que impliquem alteração integral de escopo ou mudança de briefing após a aprovação serão tratadas como demanda adicional.</p>
+    <p class="clause-item">A aprovação expressa da CONTRATANTE atesta a exatidão das informações comerciais, técnicas, institucionais e regulatórias aplicáveis ao seu segmento de atuação.</p>
 
-  <h2 class="section-heading">15. VIGÊNCIA E RESCISÃO</h2>
-  <p class="clause-p">15.1. O presente contrato vigorará por prazo indeterminado a partir da data de sua assinatura.</p>
-  <p class="clause-p">15.2. A operação seguirá um ciclo estratégico inicial de 90 (noventa) dias, dividido em estruturação (dias 1 a 30), testes e validação (dias 31 a 60) e consolidação e escala (dias 61 a 90).</p>
-  <p class="clause-p">15.3. Qualquer das partes poderá rescindir o presente contrato imotivadamente, a qualquer tempo, mediante comunicação formal por escrito com antecedência mínima de 30 (trinta) dias, período durante o qual os serviços e os respectivos pagamentos permanecerão vigentes.</p>
-  <p class="clause-p">15.4. O contrato poderá ser rescindido imediatamente, por justa causa, em caso de descumprimento grave de cláusula contratual não sanado no prazo de 5 (cinco) dias úteis após notificação, violação de confidencialidade ou prática de atos ilícitos.</p>
+    {{if .Escopo.TrafegoPago}}
+    <!-- TRÁFEGO PAGO E ASSUNÇÃO DE RISCO PELA CONTRATADA -->
+    <h2 class="clause-heading">TRÁFEGO PAGO E ASSUNÇÃO DE RISCO PELA CONTRATADA</h2>
+    <div class="callout-risk">
+      <strong>Assunção Integral do Investimento e Risco pela Contratada:</strong> A CONTRATADA (IA Infinito) será integralmente responsável pelo planejamento, configuração, gestão, otimização e custeio financeiro das campanhas de tráfego pago vinculadas à operação contratada, não havendo cobrança adicional de verba de mídia à CONTRATANTE além da remuneração pactuada na Cláusula {{.RemuneracaoClauseNum}}.
+    </div>
+    <p class="clause-item">Em decorrência da assunção do investimento publicitário pela CONTRATADA, todo o risco financeiro e operacional relativo à aplicação da verba de mídia, variações de leilão, custo por clique ou desempenho financeiro dos anúncios fica integralmente sob responsabilidade da CONTRATADA.</p>
+    <p class="clause-item">A CONTRATADA definirá de forma autônoma a distribuição de orçamento, os períodos de veiculação, os testes de público e a escala das campanhas, visando maximizar a geração de oportunidades qualificadas para a CONTRATANTE.</p>
+    <p class="clause-item">Eventuais bloqueios técnicos, instabilidades, revisões de políticas ou indisponibilidades impostas pelas próprias plataformas de terceiros (Meta, Google, TikTok e correlatas) serão geridos tecnicamente pela CONTRATADA para restabelecimento da operação, não caracterizando infração contratual.</p>
+    {{end}}
 
-  <h2 class="section-heading">16. DISPOSIÇÕES GERAIS E FORO</h2>
-  <p class="clause-p">16.1. As partes declaram que mantêm total autonomia administrativa, fiscal e trabalhista, não se estabelecendo entre elas qualquer vínculo empregatício, societário ou de representação comercial.</p>
-  <p class="clause-p">16.2. Comunicações operacionais e aprovações realizadas por e-mail ou aplicativo de mensagens corporativo (WhatsApp) entre os responsáveis designados terão plena validade entre as partes.</p>
-  <p class="clause-p">16.3. O presente instrumento poderá ser assinado de forma física ou eletrônica, possuindo plena validade jurídica e executiva em qualquer formato admitido pela legislação brasileira.</p>
-  <p class="clause-p">16.4. Fica eleito o foro da Comarca de <strong>{{.CityForum}}</strong> para dirimir quaisquer controvérsias oriundas deste contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.</p>
+    {{if .HasLeadsClause}}
+    <!-- LEADS, CANAIS DIGITAIS E ATENDIMENTO COMERCIAL -->
+    <h2 class="clause-heading">LEADS, CANAIS DIGITAIS E ATENDIMENTO COMERCIAL</h2>
+    {{if and .Escopo.LinkMulticanal .HasCanais}}
+    <p class="clause-item">A CONTRATADA estruturará e manterá ativo o link personalizado da CONTRATANTE contendo os acessos diretos para os canais de mídias sociais e contato: <strong>{{.CanaisFormatted}}</strong>, além de configurar os fluxos de entrada de contatos provenientes da operação.</p>
+    {{end}}
+    <p class="clause-item">A atuação da CONTRATADA encerra-se na atração do público e no direcionamento do interessado até os canais oficiais da CONTRATANTE. O atendimento comercial, a qualificação final, a elaboração de orçamentos ou propostas, a negociação e o fechamento das vendas são de responsabilidade exclusiva da CONTRATANTE.</p>
+    <p class="clause-item">A CONTRATANTE compromete-se a manter equipe treinada e estrutura de atendimento ágil para responder aos contatos recebidos em tempo hábil, compartilhando periodicamente o feedback comercial para otimização contínua da operação.</p>
+    {{end}}
+
+    <!-- OBRIGAÇÕES DA CONTRATADA -->
+    <h2 class="clause-heading">OBRIGAÇÕES DA CONTRATADA</h2>
+    <ul class="clause-list">
+      <li>Executar todos os serviços contratados com diligência técnica, organização e padrão alinhado ao posicionamento da CONTRATANTE.</li>
+      {{if .Escopo.ServicosBaseTecnologia}}
+      <li>Realizar a implantação, configuração e manutenção das soluções tecnológicas e automações previstas neste instrumento.</li>
+      {{end}}
+      {{if and .Escopo.LinkMulticanal .HasCanais}}
+      <li>Desenvolver, configurar e manter atualizado o link personalizado com os canais {{.CanaisFormatted}}.</li>
+      {{end}}
+      {{if .Escopo.TrafegoPago}}
+      <li>Assumir integralmente o investimento financeiro e os riscos operacionais referentes às campanhas de tráfego pago previstas neste contrato.</li>
+      {{end}}
+      <li>Manter a CONTRATANTE informada sobre o andamento do cronograma e evoluções da operação.</li>
+      <li>Zelar pelo sigilo das credenciais, acessos e informações comerciais fornecidas pela CONTRATANTE, utilizando-os estritamente na execução deste contrato.</li>
+      <li>Apresentar relatórios periódicos de desempenho contendo os indicadores da operação e recomendações estratégicas.</li>
+    </ul>
+
+    <!-- OBRIGAÇÕES DA CONTRATANTE -->
+    <h2 class="clause-heading">OBRIGAÇÕES DA CONTRATANTE</h2>
+    <ul class="clause-list">
+      <li>Fornecer informações fidedignas e atualizadas sobre seus produtos, serviços, condições comerciais, diferenciais e canais oficiais de atendimento.</li>
+      <li>Conceder os acessos, permissões administrativas e integrações necessários à execução dos serviços contratados{{if and .Escopo.LinkMulticanal .HasCanais}} (incluindo {{.CanaisFormatted}}){{end}}.</li>
+      {{if .Escopo.ConteudoOrganico}}
+      <li>Disponibilizar equipe e agenda semanal para a realização das gravações em bloco e validação dos materiais dentro dos prazos estipulados.</li>
+      {{else}}
+      <li>Disponibilizar responsável para validações e aprovações técnicas dentro dos prazos estipulados.</li>
+      {{end}}
+      {{if .HasLeadsClause}}
+      <li>Realizar o atendimento comercial tempestivo de todos os interessados e oportunidades encaminhados pelos canais digitais.</li>
+      {{end}}
+      <li>Manter a regularidade fiscal, cadastral e regulatória de suas atividades empresariais, responsabilizando-se pela legalidade das ofertas divulgadas.</li>
+      <li>Efetuar pontualmente o pagamento da remuneração contratada na Cláusula {{.RemuneracaoClauseNum}}.</li>
+    </ul>
+
+    <!-- ITENS NÃO INCLUÍDOS NO ESCOPO -->
+    <h2 class="clause-heading">ITENS NÃO INCLUÍDOS NO ESCOPO</h2>
+    <p class="clause-item">Salvo contratação específica mediante aditivo ou proposta complementar aprovada pelas partes, não estão contemplados no valor deste contrato:</p>
+    <ul class="clause-list">
+      {{if not .Escopo.ServicosBaseTecnologia}}
+      <li>Desenvolvimento completo de novo website institucional, lojas virtuais, sistemas internos ou softwares sob medida.</li>
+      {{end}}
+      <li>Produção audiovisual presencial com deslocamento de equipe externa, locação de estúdios, contratação de atores ou influenciadores digitais.</li>
+      <li>Serviços de fotografia profissional presencial, criação de identidade visual completa do zero ou produção de materiais gráficos impressos.</li>
+      <li>Contratação de licenças de terceiros, plataformas de disparo pago de mensagens ou custos externos de infraestrutura de uso interno da CONTRATANTE.</li>
+      <li>Execução direta de atendimento comercial, negociação ou fechamento de vendas em nome da CONTRATANTE.</li>
+    </ul>
+
+    <!-- INDICADORES E RELATÓRIOS DE DESEMPENHO -->
+    <h2 class="clause-heading">INDICADORES E RELATÓRIOS DE DESEMPENHO</h2>
+    <p class="clause-item">A operação será acompanhada por meio de indicadores objetivos de desempenho{{if .HasAnexoI}}, incluindo alcance, visualizações, {{if and .Escopo.LinkMulticanal .HasCanais}}cliques no link personalizado, {{end}}conversas iniciadas, contatos gerados e vendas informadas pela CONTRATANTE{{end}}.</p>
+    <p class="clause-item">Os relatórios serão consolidados mensalmente pela CONTRATADA, servindo de base para os ajustes e evolução contínua da operação.</p>
+
+    <!-- PROTEÇÃO DE DADOS PESSOAIS (LGPD) -->
+    <h2 class="clause-heading">PROTEÇÃO DE DADOS PESSOAIS (LGPD)</h2>
+    <p class="clause-item">As partes comprometem-se a cumprir integralmente a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 — LGPD) e demais normas aplicáveis à privacidade e segurança da informação.</p>
+    <p class="clause-item">No tratamento de dados de clientes e interessados captados pelos canais da CONTRATANTE, esta figurará como Controladora e a CONTRATADA atuará como Operadora, limitando-se a tratar os dados estritamente para a execução do objeto contratual.</p>
+    <p class="clause-item">É vedado à CONTRATADA comercializar, ceder ou utilizar dados pessoais obtidos em razão deste contrato para finalidades alheias à operação da CONTRATANTE.</p>
+    <p class="clause-item">Cada parte adotará medidas técnicas e administrativas aptas a proteger os dados contra acessos não autorizados, comprometendo-se a comunicar imediatamente a outra parte em caso de qualquer incidente de segurança relevante.</p>
+
+    <!-- CONFIDENCIALIDADE -->
+    <h2 class="clause-heading">CONFIDENCIALIDADE</h2>
+    <p class="clause-item">São consideradas confidenciais todas as informações estratégicas, comerciais, financeiras, operacionais, listas de contatos, métricas internas, metodologias e credenciais compartilhadas entre as partes durante a vigência deste instrumento.</p>
+    <p class="clause-item">As partes obrigam-se a manter sigilo absoluto sobre tais informações, não as divulgando a terceiros sem autorização prévia por escrito, exceto quando exigido por determinação legal ou judicial.</p>
+    <p class="clause-item">A obrigação de confidencialidade permanecerá válida pelo prazo de 5 (cinco) anos após o encerramento deste contrato.</p>
+
+    <!-- PROPRIEDADE INTELECTUAL -->
+    <h2 class="clause-heading">PROPRIEDADE INTELECTUAL</h2>
+    <p class="clause-item">Mediante o pagamento regular das parcelas devidas, a CONTRATANTE deterá o direito de uso definitivo sobre os entregáveis e materiais finais produzidos exclusivamente para sua marca durante a vigência contratual.</p>
+    <p class="clause-item">Permanecem de titularidade exclusiva da CONTRATADA suas metodologias de trabalho, processos internos, estruturas de campanhas, modelos de roteiros, códigos proprietários, know-how e ferramentas utilizadas na prestação dos serviços.</p>
+    <p class="clause-item">Arquivos abertos de edição e projetos-fonte não integram a entrega padrão, salvo ajuste expresso em contrário entre as partes.</p>
+
+    <!-- REMUNERAÇÃO E CONDIÇÕES DE PAGAMENTO -->
+    <h2 class="clause-heading">REMUNERAÇÃO E CONDIÇÕES DE PAGAMENTO</h2>
+    <p class="clause-item">Pelos serviços prestados{{if .Escopo.TrafegoPago}}, incluindo a gestão e o custeio integral do investimento em tráfego pago assumido pela CONTRATADA{{end}}, a CONTRATANTE pagará os seguintes valores:</p>
+
+    <table class="finance-table">
+      <thead>
+        <tr>
+          <th>ITEM FINANCEIRO</th>
+          <th>VALOR / CONDIÇÃO</th>
+          <th>FORMA DE PAGAMENTO</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{if .HasSetupFee}}
+        <tr>
+          <td>Implantação / Setup</td>
+          <td>{{.SetupClauseValueText}}</td>
+          <td>{{.SetupPaymentForm}}</td>
+        </tr>
+        {{end}}
+        {{if .HasMonthlyFee}}
+        <tr>
+          <td>Mensalidade Recorrente</td>
+          <td>R$ {{.MonthlyFeeFormatted}} ({{.MonthlyFeeExtenso}}){{if .Escopo.TrafegoPago}} — com verba de tráfego pago já assumida pela CONTRATADA{{end}}</td>
+          <td>{{.MonthlyPaymentForm}}</td>
+        </tr>
+        <tr>
+          <td>Dia de Vencimento</td>
+          <td>Todo dia {{.DueDay}} de cada mês</td>
+          <td>Início da cobrança em {{.BillingStartDateDisplay}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+
+    {{if not .HasMonthlyFee}}
+    <p class="clause-p"><strong>Ausência de Mensalidade Recorrente:</strong> As partes ajustam expressamente que <strong>não haverá cobrança de mensalidade recorrente</strong> neste instrumento, restringindo-se a remuneração devida pela CONTRATANTE exclusivamente ao valor de implantação/projeto pactuado na tabela acima.</p>
+    {{end}}
+
+    <p class="clause-item">O atraso no pagamento de qualquer parcela sujeitará a CONTRATANTE ao pagamento de multa moratória de 2% (dois por cento) sobre o valor devido, acrescida de juros de mora de 1% (um por cento) ao mês, calculados pro rata die, além de correção monetária pelo índice IPCA/IBGE.</p>
+    <p class="clause-item">Persistindo a inadimplência por período superior a 10 (dez) dias após notificação formal, a CONTRATADA poderá suspender imediatamente {{if .Escopo.TrafegoPago}}a veiculação das campanhas de tráfego pago custeadas por ela e as demais entregas{{else}}a execução dos serviços e entregas contratadas{{end}} até a efetiva regularização financeira.</p>
+
+    <!-- VIGÊNCIA E RESCISÃO -->
+    <h2 class="clause-heading">VIGÊNCIA E RESCISÃO</h2>
+    <p class="clause-item">O presente contrato vigorará por prazo indeterminado a partir da data de sua assinatura.</p>
+    {{if .HasAnexoI}}
+    <p class="clause-item">A operação seguirá um ciclo estratégico inicial de {{.CicloEstrategicoDias}} ({{.CicloEstrategicoExtenso}}) dias, dividido em estruturação, testes e validação, e consolidação e escala.</p>
+    {{end}}
+    <p class="clause-item">Qualquer das partes poderá rescindir o presente contrato imotivadamente, a qualquer tempo, mediante comunicação formal por escrito com antecedência mínima de 30 (trinta) dias, período durante o qual os serviços e os respectivos pagamentos permanecerão vigentes.</p>
+    <p class="clause-item">O contrato poderá ser rescindido imediatamente, por justa causa, em caso de descumprimento grave de cláusula contratual não sanado no prazo de 5 (cinco) dias úteis após notificação, violação de confidencialidade ou prática de atos ilícitos.</p>
+
+    <!-- DISPOSIÇÕES GERAIS E FORO -->
+    <h2 class="clause-heading">DISPOSIÇÕES GERAIS E FORO</h2>
+    <p class="clause-item">As partes declaram que mantêm total autonomia administrativa, fiscal e trabalhista, não se estabelecendo entre elas qualquer vínculo empregatício, societário ou de representação comercial.</p>
+    <p class="clause-item">Comunicações operacionais e aprovações realizadas por e-mail ou aplicativo de mensagens corporativo (WhatsApp) entre os responsáveis designados terão plena validade entre as partes.</p>
+    <p class="clause-item">O presente instrumento poderá ser assinado de forma física ou eletrônica, possuindo plena validade jurídica e executiva em qualquer formato admitido pela legislação brasileira.</p>
+    <p class="clause-item">Fica eleito o foro da Comarca de <strong>{{.CityForum}}</strong> para dirimir quaisquer controvérsias oriundas deste contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.</p>
+  </div>
 
   {{if .IncludeWitnesses}}
   <p class="clause-p">E, por estarem assim justas e contratadas, as partes firmam o presente instrumento em 2 (duas) vias de igual teor e forma, na presença das testemunhas abaixo.</p>
@@ -526,57 +645,50 @@
     {{end}}
   </table>
 
+  {{if .HasAnexoI}}
   <div class="page-break"></div>
 
-  <p class="eyebrow">ANEXO I</p>
-  <h1 class="doc-title" style="font-size: 18pt;">Escopo Operacional e Jornada de Execução</h1>
-  <p class="doc-lead">Detalhamento técnico das entregas recorrentes, canais integrados e responsabilidades operacionais aplicáveis à CONTRATANTE.</p>
+  <p class="eyebrow">ANEXO I · ESCOPO OPERACIONAL</p>
+  <h1 class="doc-title" style="font-size: 18pt;">Detalhamento das Entregas e Jornada de {{.CicloEstrategicoDias}} Dias</h1>
+  <p class="doc-lead">Este anexo integra o Contrato de Prestação de Serviços firmado com a <strong>IA INFINITO</strong> (CNPJ {{.ContratadaCNPJDisplay}}).</p>
 
-  <p class="anexo-sub">1. Posicionamento e Comunicação</p>
+  <p class="anexo-sub">1. ENTREGAS RECORRENTES</p>
   <ul class="clause-list">
-    <li>Reorganização da comunicação digital da CONTRATANTE para transmitir autoridade, clareza e confiança ao público-alvo.</li>
-    <li>Definição de diretrizes de linguagem, mensagens-chave e alinhamento visual entre perfil social, conteúdos e anúncios.</li>
+    {{if .Escopo.PosicionamentoEditorial}}
+    <li><strong>Posicionamento e Linha Editorial:</strong> definição de linguagem, pilares de conteúdo e ofertas prioritárias da CONTRATANTE.</li>
+    {{end}}
+    {{if .Escopo.ConteudoOrganico}}
+    <li><strong>Conteúdo Orgânico:</strong> {{.ConteudoOrganicoDesc}}</li>
+    {{end}}
+    {{if and .Escopo.LinkMulticanal .HasCanais}}
+    <li><strong>Link Personalizado Multicanal:</strong> estruturação e manutenção do hub de links oficiais integrando <strong>{{.CanaisFormatted}}</strong> com rastreamento de cliques.</li>
+    {{end}}
+    {{if .Escopo.TrafegoPago}}
+    <li><strong>Tráfego Pago (Custeado pela Contratada):</strong> criação, gestão, testes de criativos/públicos e investimento financeiro direto em mídia paga assumido integralmente pela <strong>IA Infinito</strong>.</li>
+    {{end}}
+    {{if .Escopo.CaptacaoLeads}}
+    <li><strong>Captação de Oportunidades:</strong> encaminhamento estruturado dos leads para o WhatsApp ou formulário comercial da CONTRATANTE e relatório mensal de performance.</li>
+    {{end}}
   </ul>
 
-  <p class="anexo-sub">2. Link Personalizado Multicanal</p>
-  <ul class="clause-list">
-    <li>Criação, personalização visual e hospedagem de link exclusivo da CONTRATANTE para centralização de contatos e redes sociais.</li>
-    <li>Integração direta dos botões e caminhos de acesso para: <strong>WhatsApp, Facebook, Instagram, Google e TikTok</strong>.</li>
-    <li>Atualização contínua dos links e direcionamentos conforme as campanhas ativas da CONTRATANTE.</li>
-  </ul>
-
-  <p class="anexo-sub">3. Conteúdo Orgânico e Rotina de Gravação</p>
-  <ul class="clause-list">
-    <li>Planejamento editorial mensal com pautas focadas em educar, gerar autoridade e atrair potenciais clientes.</li>
-    <li>Produção de até 3 (três) vídeos curtos (Reels/TikTok) por semana, conforme calendário aprovado.</li>
-    <li>Orientação estratégica para publicação de Stories recorrentes, sem obrigação de cobertura presencial em tempo real.</li>
-    <li>Gravação em bloco de aproximadamente 1 (uma) hora por semana pela equipe da CONTRATANTE, seguindo roteiros preparados pela IA Infinito, que executará toda a edição e acabamento.</li>
-  </ul>
-
-  <p class="anexo-sub">4. Tráfego Pago com Investimento e Risco da Contratada</p>
-  <ul class="clause-list">
-    <li>Planejamento, criação, configuração, testes de público e otimização contínua das campanhas patrocinadas.</li>
-    <li><strong>Custeio integral pela CONTRATADA:</strong> Toda a verba aplicada nas plataformas de anúncios é paga diretamente pela IA Infinito, que assume integralmente o risco financeiro e operacional do investimento em tráfego pago.</li>
-    <li>Direcionamento estratégico das campanhas para geração de conversas e oportunidades nos canais oficiais da CONTRATANTE.</li>
-  </ul>
-
-  <p class="anexo-sub">5. Cronograma Estratégico — Jornada de 90 Dias</p>
+  <p class="anexo-sub">2. JORNADA ESTRATÉGICA INICIAL ({{.CicloEstrategicoDias}} DIAS)</p>
   <table class="schedule-table">
     <thead>
       <tr>
-        <th>DIAS 01 A 30 — ESTRUTURAÇÃO</th>
-        <th>DIAS 31 A 60 — TESTES E VALIDAÇÃO</th>
-        <th>DIAS 61 A 90 — CONSOLIDAÇÃO E ESCALA</th>
+        <th>{{.Fase1Periodo}}</th>
+        <th>{{.Fase2Periodo}}</th>
+        <th>{{.Fase3Periodo}}</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td>Organização dos perfis, publicação do link personalizado (WhatsApp, Facebook, Instagram, Google e TikTok), definição de roteiros e início das gravações.</td>
-        <td>Veiculação de conteúdos e campanhas de tráfego pago custeadas pela CONTRATADA para validar abordagens que geram conversas qualificadas.</td>
-        <td>Concentração de esforços e verba de mídia nos criativos, canais e públicos com maior taxa de conversão comercial para a CONTRATANTE.</td>
+        <td>{{.Fase1Desc}}</td>
+        <td>{{.Fase2Desc}}</td>
+        <td>{{.Fase3Desc}}</td>
       </tr>
     </tbody>
   </table>
+  {{end}}
 
   <footer class="screen-footer">
     <span>IA Infinito — Contrato de Prestação de Serviços</span>

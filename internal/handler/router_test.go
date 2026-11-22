@@ -175,9 +175,55 @@ func TestHTTP_EndpointsAndPDFGeneration(t *testing.T) {
 		t.Fatalf("GET /sw.js missing /api/ bypass")
 	}
 
-	// 9. Modelo Marketing IA Infinito Completo -> Create + PDF generation
-	mktFullPayload := `{
-		"modelo_contrato": "marketing_ia_infinito",
+	// 9. Cenário A (Contrato Único — apenas Serviços Base/Tecnologia sem marketing) -> Create + PDF generation
+	scenarioAPayload := `{
+		"client_company_name": "Tech Base Ltda",
+		"client_trade_name": "Tech Base",
+		"client_cnpj": "11222333000181",
+		"client_address": "Rua 14 de Julho, 500, Campo Grande/MS",
+		"client_rep_name": "Fernanda Lima",
+		"client_email": "fernanda@techbase.com.br",
+		"client_phone": "(67) 99999-2222",
+		"setup_fee_cents": 0,
+		"has_monthly_fee": true,
+		"monthly_fee_cents": 180000,
+		"due_day": 15,
+		"start_date": "2026-11-22",
+		"city_forum": "Campo Grande/MS",
+		"escopo_marketing": {
+			"ciclo_estrategico_dias": 90,
+			"servicos_base_tecnologia": true,
+			"posicionamento_editorial": false,
+			"conteudo_organico": false,
+			"link_multicanal": false,
+			"trafego_pago": false,
+			"captacao_leads": false,
+			"qtd_imagens": 0,
+			"freq_imagens": "semanais",
+			"qtd_reels": 0,
+			"freq_reels": "semanais",
+			"direcionamento_stories": false,
+			"horas_gravacao_semanal": 0,
+			"canais": []
+		}
+	}`
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/contracts", bytes.NewBufferString(scenarioAPayload)))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("POST scenario A failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var scA domain.Contract
+	if err := json.Unmarshal(rec.Body.Bytes(), &scA); err != nil {
+		t.Fatalf("decode scA: %v", err)
+	}
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/contracts/"+scA.ID+"/pdf", nil))
+	if rec.Code != http.StatusOK || !bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
+		t.Fatalf("GET scenario A PDF failed: code=%d len=%d", rec.Code, rec.Body.Len())
+	}
+
+	// 10. Cenário B (Contrato Único — Marketing completo com quantidades personalizadas, canais e tráfego pago) -> Create + PDF generation
+	scenarioBPayload := `{
 		"client_company_name": "Clinica Alpha Ltda",
 		"client_trade_name": "Alpha Odonto",
 		"client_cnpj": "11222333000181",
@@ -193,6 +239,7 @@ func TestHTTP_EndpointsAndPDFGeneration(t *testing.T) {
 		"city_forum": "Campo Grande/MS",
 		"escopo_marketing": {
 			"ciclo_estrategico_dias": 90,
+			"servicos_base_tecnologia": false,
 			"posicionamento_editorial": true,
 			"conteudo_organico": true,
 			"link_multicanal": true,
@@ -208,66 +255,17 @@ func TestHTTP_EndpointsAndPDFGeneration(t *testing.T) {
 		}
 	}`
 	rec = httptest.NewRecorder()
-	r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/contracts", bytes.NewBufferString(mktFullPayload)))
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/contracts", bytes.NewBufferString(scenarioBPayload)))
 	if rec.Code != http.StatusCreated {
-		t.Fatalf("POST marketing full failed: code=%d body=%s", rec.Code, rec.Body.String())
+		t.Fatalf("POST scenario B failed: code=%d body=%s", rec.Code, rec.Body.String())
 	}
-	var mktFull domain.Contract
-	if err := json.Unmarshal(rec.Body.Bytes(), &mktFull); err != nil {
-		t.Fatalf("decode mktFull: %v", err)
-	}
-	if mktFull.ModeloContrato != domain.ModeloMarketingIAInfinito {
-		t.Fatalf("expected modelo_contrato=%q, got %q", domain.ModeloMarketingIAInfinito, mktFull.ModeloContrato)
+	var scB domain.Contract
+	if err := json.Unmarshal(rec.Body.Bytes(), &scB); err != nil {
+		t.Fatalf("decode scB: %v", err)
 	}
 	rec = httptest.NewRecorder()
-	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/contracts/"+mktFull.ID+"/pdf", nil))
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/contracts/"+scB.ID+"/pdf", nil))
 	if rec.Code != http.StatusOK || !bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
-		t.Fatalf("GET marketing full PDF failed: code=%d len=%d", rec.Code, rec.Body.Len())
-	}
-
-	// 10. Modelo Marketing IA Infinito Parcial (sem tráfego pago, setup=0, 8 imagens mensais, 0 Reels) -> Create + PDF generation
-	mktPartialPayload := `{
-		"modelo_contrato": "marketing_ia_infinito",
-		"client_company_name": "Loja Beta Ltda",
-		"client_cnpj": "11222333000181",
-		"client_address": "Rua 14 de Julho, 500, Campo Grande/MS",
-		"client_rep_name": "Fernanda Lima",
-		"client_email": "fernanda@beta.com.br",
-		"client_phone": "(67) 99999-2222",
-		"setup_fee_cents": 0,
-		"has_monthly_fee": true,
-		"monthly_fee_cents": 180000,
-		"due_day": 15,
-		"start_date": "2026-11-22",
-		"city_forum": "Campo Grande/MS",
-		"escopo_marketing": {
-			"ciclo_estrategico_dias": 90,
-			"posicionamento_editorial": true,
-			"conteudo_organico": true,
-			"link_multicanal": true,
-			"trafego_pago": false,
-			"captacao_leads": true,
-			"qtd_imagens": 8,
-			"freq_imagens": "mensais",
-			"qtd_reels": 0,
-			"freq_reels": "semanais",
-			"direcionamento_stories": false,
-			"horas_gravacao_semanal": 1,
-			"canais": ["WhatsApp", "Instagram"]
-		}
-	}`
-	rec = httptest.NewRecorder()
-	r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/contracts", bytes.NewBufferString(mktPartialPayload)))
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("POST marketing partial failed: code=%d body=%s", rec.Code, rec.Body.String())
-	}
-	var mktPartial domain.Contract
-	if err := json.Unmarshal(rec.Body.Bytes(), &mktPartial); err != nil {
-		t.Fatalf("decode mktPartial: %v", err)
-	}
-	rec = httptest.NewRecorder()
-	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/contracts/"+mktPartial.ID+"/pdf", nil))
-	if rec.Code != http.StatusOK || !bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
-		t.Fatalf("GET marketing partial PDF failed: code=%d len=%d", rec.Code, rec.Body.Len())
+		t.Fatalf("GET scenario B PDF failed: code=%d len=%d", rec.Code, rec.Body.Len())
 	}
 }

@@ -664,21 +664,6 @@
         <div id="formBanner" class="banner-feedback" role="status" aria-live="polite"></div>
 
         <form id="contractForm" novalidate>
-          <!-- SELETOR DE MODELO DE CONTRATO -->
-          <section class="form-section">
-            <h2 class="form-section-title">Modelo de Contrato</h2>
-            <div class="field-grid">
-              <div class="field full">
-                <label for="modelo_contrato">Selecione o modelo</label>
-                <select class="control" id="modelo_contrato" name="modelo_contrato">
-                  <option value="padrao" selected>Modelo Padrão</option>
-                  <option value="marketing_ia_infinito">Estratégia, Marketing e Tecnologia (IA Infinito)</option>
-                </select>
-                <p class="microcopy" id="modeloMicrocopy">Modelo padrão oficial com cláusulas fixas de prestação de serviços.</p>
-              </div>
-            </div>
-          </section>
-
           <!-- SEÇÃO 1: IDENTIFICAÇÃO DA CONTRATANTE -->
           <section class="form-section">
             <h2 class="form-section-title">1. Identificação da Contratante</h2>
@@ -749,9 +734,106 @@
             </div>
           </section>
 
-          <!-- SEÇÃO 3: CONDIÇÕES COMERCIAIS -->
+          <!-- SEÇÃO 3: ESCOPO E SERVIÇOS CONTRATADOS -->
+          <section class="form-section" id="scopeSection">
+            <h2 class="form-section-title">3. Escopo e Serviços Contratados</h2>
+            <div class="field-grid">
+              <div class="field full">
+                <label class="toggle-row" for="mkt_servicos_base">
+                  <input id="mkt_servicos_base" type="checkbox">
+                  <span>Serviços Base / Tecnologia (automação, sistemas e implantação)</span>
+                </label>
+                <p class="microcopy">Implantação, integração de sistemas, automações operacionais e suporte técnico.</p>
+              </div>
+
+              <div class="field full">
+                <label class="toggle-row" for="mkt_posicionamento">
+                  <input id="mkt_posicionamento" type="checkbox" checked>
+                  <span>Posicionamento e Linha Editorial</span>
+                </label>
+                <p class="microcopy">Definição de linguagem, pilares de conteúdo e ofertas prioritárias.</p>
+              </div>
+
+              <div class="field full">
+                <label class="toggle-row" for="mkt_conteudo">
+                  <input id="mkt_conteudo" type="checkbox" checked>
+                  <span>Produção de Conteúdo Orgânico</span>
+                </label>
+                <div class="sub-group" id="mktConteudoSub">
+                  <div class="field">
+                    <label for="mkt_qtd_imagens">Imagens / Artes Estáticas</label>
+                    <div class="inline-pair">
+                      <input class="control" id="mkt_qtd_imagens" type="number" min="0" max="200" value="0" inputmode="numeric">
+                      <select class="control" id="mkt_freq_imagens">
+                        <option value="semanais" selected>semanais</option>
+                        <option value="mensais">mensais</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="mkt_qtd_reels">Reels / Vídeos Curtos</label>
+                    <div class="inline-pair">
+                      <input class="control" id="mkt_qtd_reels" type="number" min="0" max="200" value="3" inputmode="numeric">
+                      <select class="control" id="mkt_freq_reels">
+                        <option value="semanais" selected>semanais</option>
+                        <option value="mensais">mensais</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="mkt_horas_gravacao">Horas de Gravação em Bloco (por semana)</label>
+                    <input class="control" id="mkt_horas_gravacao" type="number" min="0" max="20" value="1" inputmode="numeric">
+                  </div>
+                  <label class="toggle-row" for="mkt_stories">
+                    <input id="mkt_stories" type="checkbox" checked>
+                    <span>Incluir direcionamento de Stories</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="field full">
+                <label class="toggle-row" for="mkt_link_multicanal">
+                  <input id="mkt_link_multicanal" type="checkbox" checked>
+                  <span>Link Personalizado Multicanal</span>
+                </label>
+                <div class="sub-group" id="mktCanaisSub">
+                  <div class="channel-list">
+                    <label class="toggle-row"><input type="checkbox" name="mkt_canal" value="WhatsApp" checked><span>WhatsApp</span></label>
+                    <label class="toggle-row"><input type="checkbox" name="mkt_canal" value="Instagram" checked><span>Instagram</span></label>
+                    <label class="toggle-row"><input type="checkbox" name="mkt_canal" value="Facebook" checked><span>Facebook</span></label>
+                    <label class="toggle-row"><input type="checkbox" name="mkt_canal" value="Google" checked><span>Google</span></label>
+                    <label class="toggle-row"><input type="checkbox" name="mkt_canal" value="TikTok" checked><span>TikTok</span></label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field full">
+                <label class="toggle-row" for="mkt_trafego_pago">
+                  <input id="mkt_trafego_pago" type="checkbox" checked>
+                  <span>Gestão e Investimento em Tráfego Pago (Risco Contratada)</span>
+                </label>
+                <p class="microcopy">Assunção integral do investimento em mídia pela IA Infinito sem verba extra.</p>
+              </div>
+
+              <div class="field full">
+                <label class="toggle-row" for="mkt_captacao_leads">
+                  <input id="mkt_captacao_leads" type="checkbox" checked>
+                  <span>Captação e Encaminhamento de Leads</span>
+                </label>
+                <p class="microcopy">Fluxo de captação e relatório mensal de performance.</p>
+              </div>
+
+              <div class="field full" id="mktCicloField">
+                <label for="mkt_ciclo_dias">Ciclo Estratégico Inicial (dias)</label>
+                <input class="control" id="mkt_ciclo_dias" type="number" min="15" max="365" value="90" inputmode="numeric">
+                <p class="microcopy">Padrão de 90 dias dividido em 3 fases no Anexo I.</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- SEÇÃO 4: CONDIÇÕES COMERCIAIS -->
           <section class="form-section">
-            <h2 class="form-section-title">3. Condições Comerciais e Vigência</h2>
+            <h2 class="form-section-title">4. Condições Comerciais e Vigência</h2>
             <div class="field-grid">
               <div class="field">
                 <label for="setup_fee_display">Taxa de Implantação (R$)</label>
@@ -825,96 +907,7 @@
               <div class="field full">
                 <label for="city_forum">Cidade / Foro Eleito</label>
                 <input class="control" id="city_forum" name="city_forum" type="text" value="Campo Grande/MS">
-                <p class="microcopy" id="forumMicrocopy">Cláusulas oficiais mantidas: link multicanal (WhatsApp, Facebook, Instagram, Google e TikTok) e tráfego pago com risco da CONTRATADA.</p>
-              </div>
-            </div>
-          </section>
-
-          <!-- SEÇÃO 4 (CONDICIONAL): ESCOPO DINÂMICO — MARKETING IA INFINITO -->
-          <section class="form-section" id="marketingScopeSection" hidden>
-            <h2 class="form-section-title">4. Escopo de Serviços — IA Infinito</h2>
-            <div class="field-grid">
-              <div class="field full">
-                <label for="mkt_ciclo_dias">Ciclo Estratégico Inicial (dias)</label>
-                <input class="control" id="mkt_ciclo_dias" type="number" min="15" max="365" value="90" inputmode="numeric">
-                <p class="microcopy">Padrão de 90 dias dividido em 3 fases no Anexo I.</p>
-              </div>
-
-              <div class="field full">
-                <label class="toggle-row" for="mkt_posicionamento">
-                  <input id="mkt_posicionamento" type="checkbox" checked>
-                  <span>Posicionamento e Linha Editorial</span>
-                </label>
-                <p class="microcopy">Definição de linguagem, pilares de conteúdo e ofertas prioritárias.</p>
-              </div>
-
-              <div class="field full">
-                <label class="toggle-row" for="mkt_conteudo">
-                  <input id="mkt_conteudo" type="checkbox" checked>
-                  <span>Produção de Conteúdo Orgânico</span>
-                </label>
-                <div class="sub-group" id="mktConteudoSub">
-                  <div class="field">
-                    <label for="mkt_qtd_imagens">Imagens / Artes Estáticas</label>
-                    <div class="inline-pair">
-                      <input class="control" id="mkt_qtd_imagens" type="number" min="0" max="200" value="0" inputmode="numeric">
-                      <select class="control" id="mkt_freq_imagens">
-                        <option value="semanais" selected>semanais</option>
-                        <option value="mensais">mensais</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="field">
-                    <label for="mkt_qtd_reels">Reels / Vídeos Curtos</label>
-                    <div class="inline-pair">
-                      <input class="control" id="mkt_qtd_reels" type="number" min="0" max="200" value="3" inputmode="numeric">
-                      <select class="control" id="mkt_freq_reels">
-                        <option value="semanais" selected>semanais</option>
-                        <option value="mensais">mensais</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="field">
-                    <label for="mkt_horas_gravacao">Horas de Gravação em Bloco (por semana)</label>
-                    <input class="control" id="mkt_horas_gravacao" type="number" min="0" max="20" value="1" inputmode="numeric">
-                  </div>
-                  <label class="toggle-row" for="mkt_stories">
-                    <input id="mkt_stories" type="checkbox" checked>
-                    <span>Incluir direcionamento de Stories</span>
-                  </label>
-                </div>
-              </div>
-
-              <div class="field full">
-                <label class="toggle-row" for="mkt_link_multicanal">
-                  <input id="mkt_link_multicanal" type="checkbox" checked>
-                  <span>Link Personalizado Multicanal</span>
-                </label>
-                <div class="sub-group" id="mktCanaisSub">
-                  <div class="channel-list">
-                    <label class="toggle-row"><input type="checkbox" name="mkt_canal" value="WhatsApp" checked><span>WhatsApp</span></label>
-                    <label class="toggle-row"><input type="checkbox" name="mkt_canal" value="Instagram" checked><span>Instagram</span></label>
-                    <label class="toggle-row"><input type="checkbox" name="mkt_canal" value="Facebook" checked><span>Facebook</span></label>
-                    <label class="toggle-row"><input type="checkbox" name="mkt_canal" value="Google" checked><span>Google</span></label>
-                    <label class="toggle-row"><input type="checkbox" name="mkt_canal" value="TikTok" checked><span>TikTok</span></label>
-                  </div>
-                </div>
-              </div>
-
-              <div class="field full">
-                <label class="toggle-row" for="mkt_trafego_pago">
-                  <input id="mkt_trafego_pago" type="checkbox" checked>
-                  <span>Gestão e Investimento em Tráfego Pago (Risco Contratada)</span>
-                </label>
-                <p class="microcopy">Inclui cláusula de assunção integral do investimento em mídia pela IA Infinito.</p>
-              </div>
-
-              <div class="field full">
-                <label class="toggle-row" for="mkt_captacao_leads">
-                  <input id="mkt_captacao_leads" type="checkbox" checked>
-                  <span>Captação e Encaminhamento de Leads</span>
-                </label>
-                <p class="microcopy">Fluxo de captação e relatório mensal de performance.</p>
+                <p class="microcopy">Cláusulas e Anexo I ajustam-se automaticamente com numeração contínua conforme os serviços selecionados.</p>
               </div>
             </div>
           </section>
@@ -1134,10 +1127,9 @@
         return res.join(' e ');
       }
 
-      const modeloEl = document.getElementById('modelo_contrato');
-      const modeloMicrocopyEl = document.getElementById('modeloMicrocopy');
-      const forumMicrocopyEl = document.getElementById('forumMicrocopy');
-      const marketingScopeSectionEl = document.getElementById('marketingScopeSection');
+      const scopeSectionEl = document.getElementById('scopeSection');
+      const mktServicosBaseEl = document.getElementById('mkt_servicos_base');
+      const mktCicloFieldEl = document.getElementById('mktCicloField');
       const mktCicloDiasEl = document.getElementById('mkt_ciclo_dias');
       const mktPosicionamentoEl = document.getElementById('mkt_posicionamento');
       const mktConteudoEl = document.getElementById('mkt_conteudo');
@@ -1168,23 +1160,15 @@
       const dueDayEl = document.getElementById('due_day');
       const includeWitnessesEl = document.getElementById('include_witnesses');
 
-      const syncMarketingUI = () => {
-        const isMarketing = modeloEl.value === 'marketing_ia_infinito';
-        marketingScopeSectionEl.hidden = !isMarketing;
+      const syncScopeUI = () => {
         mktConteudoSubEl.hidden = !mktConteudoEl.checked;
         mktCanaisSubEl.hidden = !mktLinkMulticanalEl.checked;
-
-        if (isMarketing) {
-          hasMonthlyEl.checked = true;
-          modeloMicrocopyEl.textContent = 'Contrato dinâmico com numeração automática de cláusulas, escopo configurável e Anexo I.';
-          forumMicrocopyEl.textContent = 'Cláusulas e Anexo I ajustam-se automaticamente conforme os serviços selecionados abaixo.';
-        } else {
-          modeloMicrocopyEl.textContent = 'Modelo padrão oficial com cláusulas fixas de prestação de serviços.';
-          forumMicrocopyEl.textContent = 'Cláusulas oficiais mantidas: link multicanal (WhatsApp, Facebook, Instagram, Google e TikTok) e tráfego pago com risco da CONTRATADA.';
-        }
+        const hasAnexoServices = mktPosicionamentoEl.checked || mktConteudoEl.checked || mktLinkMulticanalEl.checked || mktTrafegoPagoEl.checked || mktCaptacaoLeadsEl.checked;
+        mktCicloFieldEl.hidden = !hasAnexoServices;
       };
 
-      const resetMarketingDefaults = () => {
+      const resetScopeDefaults = () => {
+        mktServicosBaseEl.checked = false;
         mktCicloDiasEl.value = 90;
         mktPosicionamentoEl.checked = true;
         mktConteudoEl.checked = true;
@@ -1200,11 +1184,12 @@
         mktCaptacaoLeadsEl.checked = true;
       };
 
-      const applyMarketingScope = (escopo) => {
-        if (!escopo || typeof escopo !== 'object') {
-          resetMarketingDefaults();
+      const applyScope = (escopo) => {
+        if (!escopo || typeof escopo !== 'object' || Object.keys(escopo).length === 0) {
+          resetScopeDefaults();
           return;
         }
+        mktServicosBaseEl.checked = Boolean(escopo.servicos_base_tecnologia);
         mktCicloDiasEl.value = escopo.ciclo_estrategico_dias > 0 ? escopo.ciclo_estrategico_dias : 90;
         mktPosicionamentoEl.checked = escopo.posicionamento_editorial !== false;
         mktConteudoEl.checked = escopo.conteudo_organico !== false;
@@ -1221,8 +1206,9 @@
         mktCaptacaoLeadsEl.checked = escopo.captacao_leads !== false;
       };
 
-      const collectEscopoMarketing = () => ({
+      const collectEscopo = () => ({
         ciclo_estrategico_dias: Math.max(15, parseInt(mktCicloDiasEl.value || '90', 10) || 90),
+        servicos_base_tecnologia: mktServicosBaseEl.checked,
         posicionamento_editorial: mktPosicionamentoEl.checked,
         conteudo_organico: mktConteudoEl.checked,
         link_multicanal: mktLinkMulticanalEl.checked,
@@ -1286,7 +1272,7 @@
         syncPaymentLinkSuffix(totalFinalCents);
 
         const setupTextEl = document.getElementById('setupExtensoText');
-        if (modeloEl.value === 'marketing_ia_infinito' && setupBaseCents === 0) {
+        if (setupBaseCents === 0) {
           setupTextEl.textContent = 'Sem cobrança de implantação/setup (linha ocultada no contrato).';
         } else if (n === 1) {
           setupTextEl.textContent = `Parcela única à vista de R$ ${formatCurrencyDisplay(totalFinalCents)} (${centsToExtenso(totalFinalCents)})`;
@@ -1325,11 +1311,8 @@
       hasMonthlyEl.addEventListener('change', () => { syncCommercialMicrocopy(); schedulePreview(); });
       dueDayEl.addEventListener('input', () => { syncCommercialMicrocopy(); schedulePreview(); });
       includeWitnessesEl.addEventListener('change', () => { schedulePreview(); });
-      modeloEl.addEventListener('change', () => { syncMarketingUI(); syncCommercialMicrocopy(); schedulePreview(); });
-      mktConteudoEl.addEventListener('change', () => { syncMarketingUI(); schedulePreview(); });
-      mktLinkMulticanalEl.addEventListener('change', () => { syncMarketingUI(); schedulePreview(); });
-      marketingScopeSectionEl.addEventListener('change', () => { schedulePreview(); });
-      syncMarketingUI();
+      scopeSectionEl.addEventListener('change', () => { syncScopeUI(); schedulePreview(); });
+      syncScopeUI();
       syncCommercialMicrocopy();
 
       const syncCpfToggle = (checked) => {
@@ -1369,9 +1352,7 @@
       function collectPayload() {
         const hasMonthly = hasMonthlyEl.checked;
         const { n, method } = parseInstallmentOption();
-        const modelo = modeloEl.value || 'padrao';
-        const payload = {
-          modelo_contrato: modelo,
+        return {
           client_company_name: document.getElementById('client_company_name').value.trim(),
           client_trade_name: tradeNameEl.value.trim(),
           client_cnpj: onlyDigits(cnpjEl.value),
@@ -1389,12 +1370,9 @@
           include_witnesses: includeWitnessesEl.checked,
           due_day: parseInt(dueDayEl.value || '10', 10),
           start_date: document.getElementById('start_date').value || todayISO,
-          city_forum: document.getElementById('city_forum').value.trim() || 'Campo Grande/MS'
+          city_forum: document.getElementById('city_forum').value.trim() || 'Campo Grande/MS',
+          escopo_marketing: collectEscopo()
         };
-        if (modelo === 'marketing_ia_infinito') {
-          payload.escopo_marketing = collectEscopoMarketing();
-        }
-        return payload;
       }
 
       function showBanner(type, text) {
@@ -1581,10 +1559,6 @@
           if (!payload.client_rep_name) { setFieldError('client_rep_name', 'Nome do representante obrigatório.'); valid = false; }
           if (!payload.client_phone) { setFieldError('client_phone', 'Telefone / WhatsApp obrigatório.'); valid = false; }
           if (!payload.client_email) { setFieldError('client_email', 'E-mail obrigatório.'); valid = false; }
-          if (payload.modelo_contrato === 'marketing_ia_infinito' && (!payload.has_monthly_fee || payload.monthly_fee_cents <= 0)) {
-            showBanner('error', 'Informe o valor da mensalidade recorrente para o modelo Marketing IA Infinito.');
-            valid = false;
-          }
           if (!valid) return null;
         }
 
@@ -1781,10 +1755,9 @@
       document.getElementById('newContractBtn').addEventListener('click', () => {
         currentContractId = null;
         document.getElementById('contractForm').reset();
-        modeloEl.value = 'padrao';
         tradeNameEl.value = '';
-        resetMarketingDefaults();
-        syncMarketingUI();
+        resetScopeDefaults();
+        syncScopeUI();
         syncCpfToggle(false);
         setupEl.value = '1.500,00';
         setupInstallmentsEl.value = '1|pix';
@@ -1824,9 +1797,8 @@
               const tr = document.createElement('tr');
               const statusLabel = c.status === 'GENERATED' ? 'PDF Gerado' : 'Rascunho';
               const statusClass = c.status === 'GENERATED' ? 'status-tag' : 'status-tag draft';
-              const modeloLabel = c.modelo_contrato === 'marketing_ia_infinito' ? ' · Marketing IA Infinito' : '';
               tr.innerHTML = `
-                <td><strong>${escapeHtml(c.client_company_name || '(Sem razão social)')}</strong><br><span class="microcopy">${escapeHtml(c.code)}${modeloLabel}</span></td>
+                <td><strong>${escapeHtml(c.client_company_name || '(Sem razão social)')}</strong><br><span class="microcopy">${escapeHtml(c.code)}</span></td>
                 <td>${escapeHtml(maskCNPJ(c.client_cnpj))}</td>
                 <td>R$ ${formatCurrencyDisplay(c.monthly_fee_cents || 0)}</td>
                 <td><span class="${statusClass}">${statusLabel}</span></td>
@@ -1855,20 +1827,15 @@
         if (!res.ok) return;
         const c = await res.json();
         currentContractId = c.id;
-        modeloEl.value = c.modelo_contrato === 'marketing_ia_infinito' ? 'marketing_ia_infinito' : 'padrao';
-        if (modeloEl.value === 'marketing_ia_infinito') {
-          let escopoParsed = null;
-          try {
-            if (c.escopo_json && c.escopo_json !== '{}') escopoParsed = JSON.parse(c.escopo_json);
-          } catch (_) {}
-          if (!escopoParsed && c.payload_json) {
-            try { escopoParsed = JSON.parse(c.payload_json).escopo_marketing || null; } catch (_) {}
-          }
-          applyMarketingScope(escopoParsed);
-        } else {
-          resetMarketingDefaults();
+        let escopoParsed = null;
+        try {
+          if (c.escopo_json && c.escopo_json !== '{}') escopoParsed = JSON.parse(c.escopo_json);
+        } catch (_) {}
+        if (!escopoParsed && c.payload_json) {
+          try { escopoParsed = JSON.parse(c.payload_json).escopo_marketing || null; } catch (_) {}
         }
-        syncMarketingUI();
+        applyScope(escopoParsed);
+        syncScopeUI();
         document.getElementById('client_cnpj').value = maskCNPJ(c.client_cnpj);
         document.getElementById('client_company_name').value = c.client_company_name || '';
         tradeNameEl.value = c.client_trade_name || '';
