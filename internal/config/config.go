@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// DefaultInfinitePayLink is the fixed, immutable InfinitePay checkout URL injected exclusively in WhatsApp messages.
+const DefaultInfinitePayLink = "https://invoice.infinitepay.io/joel-quintana/fS050JQc8a"
+
 // Config holds all runtime configuration loaded from environment variables and optional .env file.
 type Config struct {
 	Port        string
@@ -30,6 +33,7 @@ type Config struct {
 	ContratadaRepresentante string
 	ContratadaCPF           string
 	DefaultCityForum        string
+	InfinitePayPaymentLink  string
 }
 
 // Load reads .env (if present) and populates Config from environment variables with safe defaults.
@@ -63,6 +67,7 @@ func Load() *Config {
 		ContratadaRepresentante: getEnv("CONTRATADA_REPRESENTANTE", "Joel Acosta Quintana Junior"),
 		ContratadaCPF:           os.Getenv("CONTRATADA_CPF"),
 		DefaultCityForum:        getEnv("DEFAULT_CITY_FORUM", "Campo Grande/MS"),
+		InfinitePayPaymentLink:  getEnv("INFINITEPAY_PAYMENT_LINK", DefaultInfinitePayLink),
 	}
 }
 

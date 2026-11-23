@@ -144,7 +144,6 @@ type ContractInput struct {
 	MonthlyPaymentForm string `json:"monthly_payment_form,omitempty"`
 	PayOnSignature     *bool  `json:"pay_on_signature,omitempty"`
 	IncludeWitnesses   *bool  `json:"include_witnesses,omitempty"`
-	PaymentLink        string `json:"payment_link,omitempty"`
 	DueDay             int    `json:"due_day"`
 	StartDate          string `json:"start_date"`
 	BillingStartDate   string `json:"billing_start_date,omitempty"`
@@ -351,7 +350,6 @@ func (in *ContractInput) Normalize(defaultForum string) {
 	in.ClientRepDocument = strings.TrimSpace(in.ClientRepDocument)
 	in.ClientEmail = strings.TrimSpace(in.ClientEmail)
 	in.ClientPhone = strings.TrimSpace(in.ClientPhone)
-	in.PaymentLink = strings.TrimSpace(in.PaymentLink)
 	in.CityForum = strings.TrimSpace(in.CityForum)
 	if in.CityForum == "" {
 		in.CityForum = defaultForum

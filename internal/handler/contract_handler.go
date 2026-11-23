@@ -282,7 +282,54 @@ func (h *ContractHandler) GeneratePDF(w http.ResponseWriter, r *http.Request) {
 		"sha256":           obj.SHA256Hex,
 		"size_bytes":       obj.SizeBytes,
 		"download_url":     fmt.Sprintf("/api/contracts/%s/pdf", c.ID),
+		"whatsapp_message": h.buildWhatsAppMessage(c),
 	})
+}
+
+func (h *ContractHandler) buildWhatsAppMessage(c *domain.Contract) string {
+	repName := strings.TrimSpace(c.ClientRepName)
+	if repName == "" {
+		repName = "Cliente"
+	}
+
+	payLink := strings.TrimSpace(h.cfg.InfinitePayPaymentLink)
+	if payLink == "" {
+		payLink = config.DefaultInfinitePayLink
+	}
+
+	if !c.PayOnSignature || c.SetupFeeCents <= 0 {
+		return fmt.Sprintf("Olá, %s! Segue o Contrato de Prestação de Serviços da IA Infinito (%s) para assinatura digital.", repName, c.Code)
+	}
+
+	n := c.SetupInstallments
+	if n < 1 {
+		n = 1
+	}
+	totalFinalCents := c.SetupTotalFinalCents
+	installmentCents := c.SetupInstallmentValueCents
+	if totalFinalCents <= 0 || installmentCents <= 0 {
+		method := c.SetupPaymentMethod
+		if method == "" {
+			if n >= 2 {
+				method = "card"
+			} else {
+				method = "pix"
+			}
+		}
+		totalFinalCents, installmentCents = domain.CalculateSetupInstallmentsWithMethod(c.SetupFeeCents, n, method)
+	}
+
+	var condLabel string
+	if n == 1 {
+		condLabel = fmt.Sprintf("à vista de R$ %s", domain.FormatBRL(totalFinalCents))
+	} else {
+		condLabel = fmt.Sprintf("%dx de R$ %s (total de R$ %s)", n, domain.FormatBRL(installmentCents), domain.FormatBRL(totalFinalCents))
+	}
+
+	return fmt.Sprintf(
+		"Olá, %s! Segue o Contrato de Prestação de Serviços da IA Infinito (%s) para assinatura digital.\n\nConforme combinado, segue também o link para pagamento da implantação (%s):\n%s\n\nQualquer dúvida, estou à disposição!",
+		repName, c.Code, condLabel, payLink,
+	)
 }
 
 func (h *ContractHandler) DownloadPDF(w http.ResponseWriter, r *http.Request) {

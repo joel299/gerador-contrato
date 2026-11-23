@@ -271,8 +271,16 @@ func TestHTTP_EndpointsAndPDFGeneration(t *testing.T) {
 		t.Fatalf("GET scenario B PDF failed: code=%d len=%d", rec.Code, rec.Body.Len())
 	}
 
-	// 11. Contrato parcelado em 10x com link InfinitePay fixo: link permanece 100% intacto e contrato calcula parcelas/total
-	const fixedInfinitePayLink = "https://invoice.infinitepay.io/joel-quintana/fS050JQc8a"
+	// 11. Frontend sem campo Link de Pagamento + Backend injeta URL fixa InfinitePay no WhatsApp (10x)
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	homeHTML := rec.Body.String()
+	for _, forbidden := range []string{"Link de Pagamento", "payment_link", "infinitepay"} {
+		if strings.Contains(strings.ToLower(homeHTML), strings.ToLower(forbidden)) {
+			t.Errorf("GET / must not expose %q in frontend UI", forbidden)
+		}
+	}
+
 	parcelado10xPayload := `{
 		"client_company_name": "Empresa 10x Ltda",
 		"client_cnpj": "11222333000181",
@@ -283,7 +291,7 @@ func TestHTTP_EndpointsAndPDFGeneration(t *testing.T) {
 		"setup_fee_cents": 150000,
 		"setup_installments": 10,
 		"setup_payment_method": "card",
-		"payment_link": "` + fixedInfinitePayLink + `",
+		"pay_on_signature": true,
 		"has_monthly_fee": true,
 		"monthly_fee_cents": 250000,
 		"due_day": 10,
@@ -299,14 +307,26 @@ func TestHTTP_EndpointsAndPDFGeneration(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &c10x); err != nil {
 		t.Fatalf("decode c10x: %v", err)
 	}
-	var savedPayload10x domain.ContractInput
-	if err := json.Unmarshal([]byte(c10x.PayloadJSON), &savedPayload10x); err != nil {
-		t.Fatalf("decode c10x payload_json: %v", err)
+
+	// Generate PDF and check backend-assembled WhatsApp message with fixed InfinitePay URL
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/contracts/"+c10x.ID+"/pdf", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("POST 10x PDF failed: code=%d body=%s", rec.Code, rec.Body.String())
 	}
-	if savedPayload10x.PaymentLink != fixedInfinitePayLink {
-		t.Fatalf("expected payment_link intact %q, got %q", fixedInfinitePayLink, savedPayload10x.PaymentLink)
+	var pdfResp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &pdfResp); err != nil {
+		t.Fatalf("decode pdfResp: %v", err)
 	}
-	// Verify preview HTML includes 10x calculated total/installment and does not leak/alter InfinitePay URL
+	waMsg, _ := pdfResp["whatsapp_message"].(string)
+	if !strings.Contains(waMsg, "\n"+config.DefaultInfinitePayLink+"\n") {
+		t.Errorf("expected exact immutable InfinitePay link in whatsapp_message, got: %q", waMsg)
+	}
+	if !strings.Contains(waMsg, "10x de R$ 181,58 (total de R$ 1.815,80)") {
+		t.Errorf("expected 10x calculated summary in whatsapp_message, got: %q", waMsg)
+	}
+
+	// Verify preview HTML includes 10x calculated total/installment and does not embed InfinitePay URL
 	rec = httptest.NewRecorder()
 	r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/contracts/preview", bytes.NewBufferString(parcelado10xPayload)))
 	if rec.Code != http.StatusOK {
