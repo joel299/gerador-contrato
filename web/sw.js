@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ia-infinito-contratos-v5';
+const CACHE_NAME = 'ia-infinito-contratos-v6';
 const STATIC_ASSETS = [
   '/',
   '/manifest.webmanifest',

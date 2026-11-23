@@ -879,8 +879,8 @@
 
               <div class="field full">
                 <label for="payment_link">Link de Pagamento (opcional)</label>
-                <input class="control" id="payment_link" type="url" value="https://link.infinitepay.io/joel-quintana/VC1DLTAtUg-YfLpjLenlZ-1500,00" placeholder="https://...">
-                <p class="microcopy">Enviado na mensagem do WhatsApp quando o pagamento na assinatura estiver ativo.</p>
+                <input class="control" id="payment_link" type="url" value="https://invoice.infinitepay.io/joel-quintana/fS050JQc8a" placeholder="https://invoice.infinitepay.io/...">
+                <p class="microcopy">Enviado intacto no WhatsApp direto para o checkout da InfinitePay, sem alteração automática de valor ou URL.</p>
               </div>
 
               <div class="field full">
@@ -1237,7 +1237,7 @@
         canais: getCanalCheckboxes().filter(cb => cb.checked).map(cb => cb.value)
       });
 
-      const DEFAULT_PAY_LINK_PREFIX = 'https://link.infinitepay.io/joel-quintana/VC1DLTAtUg-YfLpjLenlZ-';
+      const DEFAULT_PAYMENT_LINK = 'https://invoice.infinitepay.io/joel-quintana/fS050JQc8a';
 
       const INSTALLMENT_RATES = {
         1: 0.0599,
@@ -1271,27 +1271,18 @@
         return { totalFinalCents, installmentCents };
       };
 
-      const syncPaymentLinkSuffix = (totalFinalCents) => {
-        const cur = (paymentLinkEl.value || '').trim();
-        if (cur.startsWith(DEFAULT_PAY_LINK_PREFIX)) {
-          const suffix = (totalFinalCents / 100).toFixed(2).replace('.', ',');
-          paymentLinkEl.value = DEFAULT_PAY_LINK_PREFIX + suffix;
-        }
-      };
-
       const syncCommercialMicrocopy = () => {
         const setupBaseCents = parseCurrencyCents(setupEl.value);
         const { n, method } = parseInstallmentOption();
         const { totalFinalCents, installmentCents } = calculateSetupInstallments(setupBaseCents, n, method);
-        syncPaymentLinkSuffix(totalFinalCents);
 
         const setupTextEl = document.getElementById('setupExtensoText');
         if (setupBaseCents === 0) {
           setupTextEl.textContent = 'Sem cobrança de implantação/setup (linha ocultada no contrato).';
         } else if (n === 1) {
-          setupTextEl.textContent = `Parcela única à vista de R$ ${formatCurrencyDisplay(totalFinalCents)} (${centsToExtenso(totalFinalCents)})`;
+          setupTextEl.textContent = `Parcela única à vista de R$ ${formatCurrencyDisplay(totalFinalCents)} (${centsToExtenso(totalFinalCents)}) — exibido na cláusula financeira do contrato.`;
         } else {
-          setupTextEl.textContent = `${n}x de R$ ${formatCurrencyDisplay(installmentCents)} (Total: R$ ${formatCurrencyDisplay(totalFinalCents)})`;
+          setupTextEl.textContent = `${n}x de R$ ${formatCurrencyDisplay(installmentCents)} (Total: R$ ${formatCurrencyDisplay(totalFinalCents)}) — aplicado apenas no texto do contrato e no resumo do WhatsApp.`;
         }
 
         const dueDay = parseInt(dueDayEl.value || '10', 10);
@@ -1382,6 +1373,7 @@
           monthly_fee_cents: hasMonthly ? parseCurrencyCents(monthlyEl.value) : 0,
           pay_on_signature: payOnSigEl.checked,
           include_witnesses: includeWitnessesEl.checked,
+          payment_link: (paymentLinkEl.value || '').trim(),
           due_day: parseInt(dueDayEl.value || '10', 10),
           start_date: document.getElementById('start_date').value || todayISO,
           city_forum: document.getElementById('city_forum').value.trim() || 'Campo Grande/MS',
@@ -1679,7 +1671,7 @@
           if (payOnSigEl.checked && payLink !== '') {
             const condLabel = n === 1
               ? `à vista de R$ ${formatCurrencyDisplay(totalFinalCents)}`
-              : `${n}x de R$ ${formatCurrencyDisplay(installmentCents)}`;
+              : `${n}x de R$ ${formatCurrencyDisplay(installmentCents)} (total de R$ ${formatCurrencyDisplay(totalFinalCents)})`;
             msg = `Olá, ${repName}! Segue o Contrato de Prestação de Serviços da IA Infinito para assinatura digital.\n\nConforme combinado, segue também o link para pagamento da implantação (${condLabel}):\n${payLink}\n\nQualquer dúvida, estou à disposição!`;
           }
 
@@ -1776,7 +1768,7 @@
         setupEl.value = '1.500,00';
         setupInstallmentsEl.value = '1|pix';
         payOnSigEl.checked = true;
-        paymentLinkEl.value = DEFAULT_PAY_LINK_PREFIX + '1500,00';
+        paymentLinkEl.value = DEFAULT_PAYMENT_LINK;
         hasMonthlyEl.checked = true;
         includeWitnessesEl.checked = true;
         monthlyEl.value = '2.500,00';
@@ -1867,7 +1859,16 @@
         const loadedMethod = c.setup_payment_method || (loadedN >= 2 ? 'card' : 'pix');
         setupInstallmentsEl.value = `${loadedN}|${loadedMethod}`;
         payOnSigEl.checked = c.pay_on_signature !== false;
-        paymentLinkEl.value = DEFAULT_PAY_LINK_PREFIX + '1500,00';
+        let savedPayLink = DEFAULT_PAYMENT_LINK;
+        if (c.payload_json) {
+          try {
+            const p = JSON.parse(c.payload_json);
+            if (typeof p.payment_link === 'string' && p.payment_link.trim() !== '') {
+              savedPayLink = p.payment_link.trim();
+            }
+          } catch (_) {}
+        }
+        paymentLinkEl.value = savedPayLink;
         hasMonthlyEl.checked = c.has_monthly_fee !== false;
         includeWitnessesEl.checked = c.include_witnesses !== false;
         monthlyEl.value = formatCurrencyDisplay(c.monthly_fee_cents || 0);

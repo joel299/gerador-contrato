@@ -270,4 +270,53 @@ func TestHTTP_EndpointsAndPDFGeneration(t *testing.T) {
 	if rec.Code != http.StatusOK || !bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
 		t.Fatalf("GET scenario B PDF failed: code=%d len=%d", rec.Code, rec.Body.Len())
 	}
+
+	// 11. Contrato parcelado em 10x com link InfinitePay fixo: link permanece 100% intacto e contrato calcula parcelas/total
+	const fixedInfinitePayLink = "https://invoice.infinitepay.io/joel-quintana/fS050JQc8a"
+	parcelado10xPayload := `{
+		"client_company_name": "Empresa 10x Ltda",
+		"client_cnpj": "11222333000181",
+		"client_address": "Av. Afonso Pena, 3000, Campo Grande/MS",
+		"client_rep_name": "Lucas Mendes",
+		"client_email": "lucas@empresa10x.com.br",
+		"client_phone": "(67) 99999-3333",
+		"setup_fee_cents": 150000,
+		"setup_installments": 10,
+		"setup_payment_method": "card",
+		"payment_link": "` + fixedInfinitePayLink + `",
+		"has_monthly_fee": true,
+		"monthly_fee_cents": 250000,
+		"due_day": 10,
+		"start_date": "2026-11-22",
+		"city_forum": "Campo Grande/MS"
+	}`
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/contracts", bytes.NewBufferString(parcelado10xPayload)))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("POST 10x contract failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var c10x domain.Contract
+	if err := json.Unmarshal(rec.Body.Bytes(), &c10x); err != nil {
+		t.Fatalf("decode c10x: %v", err)
+	}
+	var savedPayload10x domain.ContractInput
+	if err := json.Unmarshal([]byte(c10x.PayloadJSON), &savedPayload10x); err != nil {
+		t.Fatalf("decode c10x payload_json: %v", err)
+	}
+	if savedPayload10x.PaymentLink != fixedInfinitePayLink {
+		t.Fatalf("expected payment_link intact %q, got %q", fixedInfinitePayLink, savedPayload10x.PaymentLink)
+	}
+	// Verify preview HTML includes 10x calculated total/installment and does not leak/alter InfinitePay URL
+	rec = httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/contracts/preview", bytes.NewBufferString(parcelado10xPayload)))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("POST preview 10x failed: code=%d", rec.Code)
+	}
+	preview10x := rec.Body.String()
+	if !strings.Contains(preview10x, "10 (dez) parcelas iguais e sucessivas") {
+		t.Errorf("expected 10x installment text in contract preview")
+	}
+	if strings.Contains(strings.ToLower(preview10x), "infinitepay") {
+		t.Errorf("contract PDF/preview must not embed InfinitePay URL")
+	}
 }
